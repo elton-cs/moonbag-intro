@@ -5,58 +5,125 @@
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="/src/styles.css" rel="stylesheet">
+    <style>
+      .tab-button {
+        padding: 0.75rem 1.5rem;
+        border-bottom: 2px solid transparent;
+        color: #9ca3af;
+        transition: color 0.2s;
+        cursor: pointer;
+      }
+      .tab-button:hover {
+        color: #ffffff;
+      }
+      .tab-button.active {
+        border-bottom-color: #60a5fa;
+        color: #60a5fa;
+      }
+      .dashboard-card {
+        background-color: #1f2937;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        border: 1px solid #374151;
+      }
+      .tab-content {
+        transition: opacity 0.2s;
+      }
+      .tab-content.hidden {
+        display: none;
+      }
+    </style>
   </head>
 
-  <body class="bg-gray-900 text-white min-h-screen p-8">
-    <div class="max-w-md mx-auto space-y-6">
-      <h1 class="text-3xl font-bold text-center mb-8">Spawn and Move</h1>
-
-      <button id="controller-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">Connect</button>
-
-      <div class="space-y-4">
-        <!-- Player Currency -->
-        <div class="bg-gradient-to-r from-blue-900 to-purple-900 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold text-yellow-400 mb-2">Player Currency</h3>
-          <div id="moon-rocks-display" class="text-xl font-bold text-yellow-200">Moon Rocks: 0</div>
-          <button id="gift-moonrocks-button" class="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-black font-semibold py-2 px-4 rounded-lg transition-colors" style="display: none;">Get 500 Moon Rocks (New Player Gift)</button>
+  <body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <div class="bg-gray-900 border-b border-gray-700">
+      <div class="max-w-6xl mx-auto">
+        <h1 class="text-2xl font-bold text-white p-6">Dojo Game Dashboard</h1>
+        <div class="px-6 pb-4">
+          <button id="controller-button" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">Connect Wallet</button>
         </div>
+      </div>
+    </div>
 
-        <!-- Legacy Demo Stats -->
-        <div class="bg-gray-800 p-4 rounded-lg space-y-2">
-          <h3 class="text-lg font-semibold text-orange-400">Movement Demo</h3>
-          <div id="position-display" class="text-sm font-mono">Position: (0, 0)</div>
-          <div id="moves-display" class="text-sm font-mono">Moves remaining: 0</div>
-        </div>
+    <!-- Tab Navigation -->
+    <div class="bg-gray-800 border-b border-gray-700">
+      <div class="max-w-6xl mx-auto">
+        <nav class="flex space-x-8 px-6">
+          <button class="tab-button active" data-tab="movement">Movement Demo</button>
+          <button class="tab-button" data-tab="moonbag">Moon Bag</button>
+        </nav>
+      </div>
+    </div>
 
-        <!-- Moon Bag Game Stats -->
-        <div class="bg-gray-800 p-4 rounded-lg space-y-2">
-          <h3 class="text-lg font-semibold text-purple-400">Current Game</h3>
-          <div class="grid grid-cols-2 gap-2 text-sm font-mono">
-            <div id="game-id-display">Game #0</div>
-            <div id="level-display">Level: 1</div>
-            <div id="health-display">Health: 5</div>
-            <div id="points-display">Points: 0</div>
-            <div id="multiplier-display">Multiplier: 1.0x</div>
-            <div id="cheddah-display">Cheddah: 0</div>
+    <!-- Tab Content -->
+    <div class="max-w-6xl mx-auto">
+      <!-- Movement Demo Tab -->
+      <div id="movement-tab" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+          <!-- Player Stats Card -->
+          <div class="dashboard-card">
+            <h3 class="text-lg font-semibold text-white mb-4">Player Stats</h3>
+            <div class="space-y-2">
+              <div id="position-display" class="text-gray-300">Position: (0, 0)</div>
+              <div id="moves-display" class="text-gray-300">Moves remaining: 0</div>
+            </div>
+          </div>
+
+          <!-- Movement Controls Card -->
+          <div class="dashboard-card">
+            <h3 class="text-lg font-semibold text-white mb-4">Controls</h3>
+            <div class="space-y-4">
+              <button id="spawn-button" disabled class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors">Spawn Player</button>
+              
+              <div class="grid grid-cols-3 gap-2">
+                <div></div>
+                <button id="up-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors">↑</button>
+                <div></div>
+                <button id="left-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors">←</button>
+                <div></div>
+                <button id="right-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors">→</button>
+                <div></div>
+                <button id="down-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors">↓</button>
+                <div></div>
+              </div>
+              
+              <button id="move-random-button" disabled class="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors">Random Move</button>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="space-y-3">
-          <button id="spawn-button" disabled class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Spawn (Legacy)</button>
-          <button id="spawn-game-button" disabled class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Spawn Game</button>
-          <button id="move-random-button" disabled class="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Move Random</button>
-        </div>
+      <!-- Moon Bag Tab -->
+      <div id="moonbag-tab" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+          <!-- Currency Card -->
+          <div class="dashboard-card">
+            <h3 class="text-lg font-semibold text-yellow-400 mb-4">Currency</h3>
+            <div id="moon-rocks-display" class="text-2xl font-bold text-yellow-200 mb-4">Moon Rocks: 0</div>
+            <button id="gift-moonrocks-button" class="w-full bg-yellow-600 hover:bg-yellow-700 text-black font-semibold py-2 px-4 rounded-lg transition-colors" style="display: none;">Get 500 Moon Rocks</button>
+          </div>
 
-        <div class="grid grid-cols-3 gap-2">
-          <div></div>
-          <button id="up-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors">↑</button>
-          <div></div>
-          <button id="left-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors">←</button>
-          <div></div>
-          <button id="right-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors">→</button>
-          <div></div>
-          <button id="down-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors">↓</button>
-          <div></div>
+          <!-- Current Game Card -->
+          <div class="dashboard-card">
+            <h3 class="text-lg font-semibold text-purple-400 mb-4">Current Game</h3>
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div id="game-id-display" class="text-gray-300">Game #0</div>
+              <div id="level-display" class="text-gray-300">Level: 1</div>
+              <div id="health-display" class="text-gray-300">Health: 5</div>
+              <div id="points-display" class="text-gray-300">Points: 0</div>
+              <div id="multiplier-display" class="text-gray-300">Multiplier: 1.0x</div>
+              <div id="cheddah-display" class="text-gray-300">Cheddah: 0</div>
+            </div>
+          </div>
+
+          <!-- Game Actions Card -->
+          <div class="dashboard-card">
+            <h3 class="text-lg font-semibold text-white mb-4">Game Actions</h3>
+            <div class="space-y-3">
+              <button id="spawn-game-button" disabled class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded-lg transition-colors">Spawn Game</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -125,6 +192,29 @@
         });
       }
 
+      // Initialize tab functionality
+      function initializeTabs() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            const targetTab = button.dataset.tab;
+            
+            // Update button states
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Update content visibility
+            tabContents.forEach(content => content.classList.add('hidden'));
+            document.getElementById(`${targetTab}-tab`).classList.remove('hidden');
+          });
+        });
+      }
+
+      // Initialize tabs on page load
+      initializeTabs();
+
       const controller = new Controller(controllerOpts);
 
       document.getElementById('controller-button').onclick = async () => {
@@ -132,7 +222,7 @@
           let account = await controller.connect();
 
           document.getElementById('controller-button').textContent = 'Connected';
-          document.getElementById('controller-button').className = 'w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors';
+          document.getElementById('controller-button').className = 'bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors';
 
           document.getElementById('spawn-button').disabled = false;
           document.getElementById('spawn-game-button').disabled = false;
