@@ -4,7 +4,7 @@ import type { Ticker } from "pixi.js";
 import { Container, Graphics } from "pixi.js";
 
 import { engine } from "../../getEngine";
-import { Button } from "../../ui/Button";
+import { CustomButton } from "../../ui/CustomButton";
 import { Label } from "../../ui/Label";
 import type { WalletConnectionState } from "../../../wallet";
 import { ConnectionStatus } from "../../../wallet";
@@ -16,38 +16,31 @@ export class MainScreen extends Container {
 
   // Layout constants for consistent spacing
   private static readonly LAYOUT = {
-    PADDING: 20,
-    MARGIN: 40,
-    PANEL_SPACING: 30,
+    PADDING: 15,
+    MARGIN: 25,
+    PANEL_SPACING: 20,
     RESOURCE_BAR: {
-      WIDTH: 800,
-      HEIGHT: 80,
-      BORDER_RADIUS: 10,
+      WIDTH: 500,
+      HEIGHT: 50,
+      BORDER_RADIUS: 8,
     },
     GAME_AREA: {
-      WIDTH: 600,
-      HEIGHT: 400,
-      BORDER_RADIUS: 20,
+      WIDTH: 500,
+      HEIGHT: 300,
+      BORDER_RADIUS: 15,
     },
     CONTROL_PANEL: {
-      WIDTH: 800,
-      HEIGHT: 120,
-      BORDER_RADIUS: 10,
-    },
-    CONNECTION: {
-      TITLE_SPACING: 80,
-      BUTTON_SPACING: 80,
-      USERNAME_SPACING: 60,
+      WIDTH: 500,
+      HEIGHT: 80,
+      BORDER_RADIUS: 8,
     },
   };
 
   // UI Containers
   public mainContainer!: Container;
-  private connectionContainer!: Container;
-  private gameContainer!: Container;
 
   // Connection UI
-  private connectButton!: Button;
+  private connectButton!: CustomButton;
   private usernameLabel!: Label;
   private titleLabel!: Label;
 
@@ -55,7 +48,11 @@ export class MainScreen extends Container {
   private resourceBar!: Container;
   private gameArea!: Container;
   private controlPanel!: Container;
-  private startGameButton!: Button;
+  private startGameButton!: CustomButton;
+
+  // Settings UI (inline)
+  private settingsContainer!: Container;
+  private pauseButton!: CustomButton;
 
   // Background
   private background!: Graphics;
@@ -63,37 +60,13 @@ export class MainScreen extends Container {
   private paused = false;
   private walletUnsubscribe?: () => void;
 
-  // Helper methods for positioning calculations
-
-  private calculateGameUILayout() {
-    const layout = MainScreen.LAYOUT;
-    const totalGameHeight =
-      layout.RESOURCE_BAR.HEIGHT +
-      layout.GAME_AREA.HEIGHT +
-      layout.CONTROL_PANEL.HEIGHT +
-      layout.PANEL_SPACING * 2;
-
-    return {
-      resourceBarY: -(totalGameHeight / 2),
-      gameAreaY:
-        -(totalGameHeight / 2) +
-        layout.RESOURCE_BAR.HEIGHT +
-        layout.PANEL_SPACING,
-      controlPanelY:
-        -(totalGameHeight / 2) +
-        layout.RESOURCE_BAR.HEIGHT +
-        layout.GAME_AREA.HEIGHT +
-        layout.PANEL_SPACING * 2,
-    };
-  }
 
   constructor() {
     super();
 
     this.createBackground();
     this.createContainers();
-    this.createConnectionUI();
-    this.createGameUI();
+    this.createUI();
     this.setupWalletConnection();
   }
 
@@ -110,48 +83,55 @@ export class MainScreen extends Container {
     this.mainContainer = new Container();
     this.addChild(this.mainContainer);
 
-    // Connection screen container (shown when disconnected)
-    this.connectionContainer = new Container();
-    this.mainContainer.addChild(this.connectionContainer);
-
-    // Game UI container (shown when connected)
-    this.gameContainer = new Container();
-    this.gameContainer.visible = false;
-    this.mainContainer.addChild(this.gameContainer);
-
-    // Game UI sub-containers
+    // UI sub-containers - all visible simultaneously
     this.resourceBar = new Container();
     this.gameArea = new Container();
     this.controlPanel = new Container();
+    this.settingsContainer = new Container();
 
-    this.gameContainer.addChild(this.resourceBar);
-    this.gameContainer.addChild(this.gameArea);
-    this.gameContainer.addChild(this.controlPanel);
+    this.mainContainer.addChild(this.resourceBar);
+    this.mainContainer.addChild(this.gameArea);
+    this.mainContainer.addChild(this.controlPanel);
+    this.mainContainer.addChild(this.settingsContainer);
   }
 
-  private createConnectionUI(): void {
-    // Title label
+  private createUI(): void {
+    this.createTitle();
+    this.createConnectionSection();
+    this.createResourceBar();
+    this.createGameArea();
+    this.createControlPanel();
+    this.createSettingsSection();
+  }
+
+  private createTitle(): void {
+    // Title label - always visible at top
     this.titleLabel = new Label({
       text: "🌙 MOON BAG 🌙",
       style: {
         fill: 0x8a4fff, // Cosmic purple
         align: "center",
-        fontSize: 48,
+        fontSize: 36,
         fontWeight: "bold",
       },
     });
     this.titleLabel.anchor.set(0.5);
-    this.connectionContainer.addChild(this.titleLabel);
+    this.mainContainer.addChild(this.titleLabel);
+  }
 
+  private createConnectionSection(): void {
     // Connect wallet button
-    this.connectButton = new Button({
+    this.connectButton = new CustomButton({
       text: "Connect Wallet",
-      width: 301,
-      height: 112,
+      width: 200,
+      height: 50,
+      backgroundColor: 0x2a2a3a,
+      borderColor: 0x8a4fff,
+      textColor: 0xffffff,
     });
-    this.connectButton.anchor.set(0.5);
-    this.connectButton.onPress.connect(() => this.handleConnectWallet());
-    this.connectionContainer.addChild(this.connectButton);
+    this.connectButton.pivot.set(100, 25); // Center the button
+    this.connectButton.onPress.on(() => this.handleConnectWallet());
+    this.mainContainer.addChild(this.connectButton);
 
     // Username display label
     this.usernameLabel = new Label({
@@ -159,24 +139,18 @@ export class MainScreen extends Container {
       style: {
         fill: 0xc0c0d0, // Moon silver
         align: "center",
-        fontSize: 18,
+        fontSize: 14,
       },
     });
     this.usernameLabel.anchor.set(0.5);
     this.usernameLabel.visible = false;
-    this.connectionContainer.addChild(this.usernameLabel);
-  }
-
-  private createGameUI(): void {
-    this.createResourceBar();
-    this.createGameArea();
-    this.createControlPanel();
+    this.mainContainer.addChild(this.usernameLabel);
   }
 
   private createResourceBar(): void {
     const layout = MainScreen.LAYOUT;
 
-    // Resource display bar at top
+    // Resource display bar
     const barBackground = new Graphics();
     barBackground.roundRect(
       0,
@@ -185,69 +159,34 @@ export class MainScreen extends Container {
       layout.RESOURCE_BAR.HEIGHT,
       layout.RESOURCE_BAR.BORDER_RADIUS,
     );
-    barBackground.fill(0x1a1a2a); // Dark panel
-    barBackground.stroke({ color: 0x8a4fff, width: 2 }); // Purple border
+    barBackground.fill(0x1a1a2a);
+    barBackground.stroke({ color: 0x8a4fff, width: 2 });
     this.resourceBar.addChild(barBackground);
 
-    // Position resource labels with consistent spacing
-    const leftColumnX = layout.PADDING;
-    const rightColumnX = layout.RESOURCE_BAR.WIDTH / 2 + layout.PADDING;
-    const firstRowY = layout.PADDING;
-    const secondRowY = layout.RESOURCE_BAR.HEIGHT - layout.PADDING - 20; // Subtract text height estimate
+    // Evenly spaced resource display
+    const resources = [
+      { text: "❤️ 5", color: 0xff4a6a },
+      { text: "🌙 304", color: 0xffdd44 },
+      { text: "💰 0", color: 0x44ff88 },
+      { text: "⭐ 0", color: 0x8a4fff },
+    ];
 
-    // Health display
-    const healthLabel = new Label({
-      text: "❤️ Health: 5",
-      style: {
-        fill: 0xff4a6a, // Cosmic red
-        fontSize: 16,
-        fontWeight: "bold",
-      },
+    const spacing = layout.RESOURCE_BAR.WIDTH / resources.length;
+    resources.forEach(({ text, color }, index) => {
+      const label = new Label({ 
+        text, 
+        style: { fill: color, fontSize: 14, fontWeight: "bold" } 
+      });
+      label.anchor.set(0.5); // Center the text
+      label.position.set(spacing * (index + 0.5), layout.RESOURCE_BAR.HEIGHT / 2);
+      this.resourceBar.addChild(label);
     });
-    healthLabel.position.set(leftColumnX, firstRowY);
-    this.resourceBar.addChild(healthLabel);
-
-    // Moon Rocks display
-    const moonRocksLabel = new Label({
-      text: "🌙 Moon Rocks: 304",
-      style: {
-        fill: 0xffdd44, // Star gold
-        fontSize: 16,
-        fontWeight: "bold",
-      },
-    });
-    moonRocksLabel.position.set(leftColumnX, secondRowY);
-    this.resourceBar.addChild(moonRocksLabel);
-
-    // Cheddah display
-    const cheddahLabel = new Label({
-      text: "💰 Cheddah: 0",
-      style: {
-        fill: 0x44ff88, // Green
-        fontSize: 16,
-        fontWeight: "bold",
-      },
-    });
-    cheddahLabel.position.set(rightColumnX, firstRowY);
-    this.resourceBar.addChild(cheddahLabel);
-
-    // Points display
-    const pointsLabel = new Label({
-      text: "⭐ Points: 0",
-      style: {
-        fill: 0x8a4fff, // Cosmic purple
-        fontSize: 16,
-        fontWeight: "bold",
-      },
-    });
-    pointsLabel.position.set(rightColumnX, secondRowY);
-    this.resourceBar.addChild(pointsLabel);
   }
 
   private createGameArea(): void {
     const layout = MainScreen.LAYOUT;
 
-    // Central game area with bag visualization
+    // Game area background
     const gameBackground = new Graphics();
     gameBackground.roundRect(
       0,
@@ -257,55 +196,34 @@ export class MainScreen extends Container {
       layout.GAME_AREA.BORDER_RADIUS,
     );
     gameBackground.fill(0x1a1a2a);
-    gameBackground.stroke({ color: 0x8a4fff, width: 3 });
+    gameBackground.stroke({ color: 0x8a4fff, width: 2 });
     this.gameArea.addChild(gameBackground);
 
-    // Calculate center positions within the game area
     const centerX = layout.GAME_AREA.WIDTH / 2;
-    const titleY = layout.MARGIN + 10; // Title near top with margin
-    const bagY = layout.GAME_AREA.HEIGHT / 2; // Bag in vertical center
-    const bagLabelY = bagY + 100 + layout.PADDING; // Label below bag with padding
+    const centerY = layout.GAME_AREA.HEIGHT / 2;
 
-    // Game title
-    const gameTitle = new Label({
-      text: "MOON BAG GAME",
-      style: {
-        fill: 0x8a4fff,
-        align: "center",
-        fontSize: 24,
-        fontWeight: "bold",
-      },
-    });
-    gameTitle.anchor.set(0.5);
-    gameTitle.position.set(centerX, titleY);
-    this.gameArea.addChild(gameTitle);
-
-    // Bag representation (large circle)
+    // Moon bag representation
     const bag = new Graphics();
     bag.circle(0, 0, 80);
     bag.fill(0x2a2a3a);
     bag.stroke({ color: 0xc0c0d0, width: 3 });
-    bag.position.set(centerX, bagY);
+    bag.position.set(centerX, centerY - 30);
     this.gameArea.addChild(bag);
 
     // Bag label
     const bagLabel = new Label({
-      text: "🎒 Your Bag",
-      style: {
-        fill: 0xc0c0d0,
-        align: "center",
-        fontSize: 18,
-      },
+      text: "🎒 Moon Bag",
+      style: { fill: 0xc0c0d0, align: "center", fontSize: 18 },
     });
     bagLabel.anchor.set(0.5);
-    bagLabel.position.set(centerX, bagLabelY);
+    bagLabel.position.set(centerX, centerY + 80);
     this.gameArea.addChild(bagLabel);
   }
 
   private createControlPanel(): void {
     const layout = MainScreen.LAYOUT;
 
-    // Bottom control panel
+    // Control panel background
     const panelBackground = new Graphics();
     panelBackground.roundRect(
       0,
@@ -318,47 +236,72 @@ export class MainScreen extends Container {
     panelBackground.stroke({ color: 0x8a4fff, width: 2 });
     this.controlPanel.addChild(panelBackground);
 
-    // Calculate button positions for even spacing
-    const buttonY = (layout.CONTROL_PANEL.HEIGHT - 60) / 2; // Center buttons vertically
-    const totalButtonWidth = 250 + 150 + 150; // Start + Shop + Stats button widths
-    const spacing =
-      (layout.CONTROL_PANEL.WIDTH - totalButtonWidth - layout.PADDING * 2) / 2; // Space between buttons
-
-    let currentX = layout.PADDING;
+    const buttonY = layout.CONTROL_PANEL.HEIGHT / 2;
+    const buttonWidth = 140;
+    const buttonHeight = 50;
+    const totalButtonsWidth = buttonWidth * 3;
+    const spacing = (layout.CONTROL_PANEL.WIDTH - totalButtonsWidth) / 4;
+    
+    let currentX = spacing;
 
     // Start Game button
-    this.startGameButton = new Button({
-      text: "🎮 START GAME",
-      width: 250,
-      height: 60,
+    this.startGameButton = new CustomButton({
+      text: "🎮 START",
+      width: buttonWidth,
+      height: buttonHeight,
+      backgroundColor: 0x2a2a3a,
+      borderColor: 0x8a4fff,
+      textColor: 0xffffff,
     });
-    this.startGameButton.position.set(currentX, buttonY);
-    this.startGameButton.onPress.connect(() => this.handleStartGame());
+    this.startGameButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.startGameButton.onPress.on(() => this.handleStartGame());
     this.controlPanel.addChild(this.startGameButton);
 
-    currentX += 250 + spacing;
+    currentX += buttonWidth + spacing;
 
-    // Shop button (placeholder for future)
-    const shopButton = new Button({
+    // Shop button
+    const shopButton = new CustomButton({
       text: "🛒 SHOP",
-      width: 150,
-      height: 60,
+      width: buttonWidth,
+      height: buttonHeight,
+      backgroundColor: 0x1a1a2a,
+      borderColor: 0x555555,
+      textColor: 0x888888,
+      enabled: false,
     });
-    shopButton.position.set(currentX, buttonY);
-    shopButton.enabled = false; // Disabled for now
+    shopButton.position.set(currentX, buttonY - buttonHeight/2);
     this.controlPanel.addChild(shopButton);
 
-    currentX += 150 + spacing;
+    currentX += buttonWidth + spacing;
 
-    // Stats button (placeholder for future)
-    const statsButton = new Button({
+    // Stats button
+    const statsButton = new CustomButton({
       text: "📊 STATS",
-      width: 150,
-      height: 60,
+      width: buttonWidth,
+      height: buttonHeight,
+      backgroundColor: 0x1a1a2a,
+      borderColor: 0x555555,
+      textColor: 0x888888,
+      enabled: false,
     });
-    statsButton.position.set(currentX, buttonY);
-    statsButton.enabled = false; // Disabled for now
+    statsButton.position.set(currentX, buttonY - buttonHeight/2);
     this.controlPanel.addChild(statsButton);
+  }
+
+  private createSettingsSection(): void {
+    // Inline settings in top-right corner
+    this.pauseButton = new CustomButton({
+      text: "⏸️",
+      width: 50,
+      height: 50,
+      backgroundColor: 0x2a2a3a,
+      borderColor: 0x8a4fff,
+      textColor: 0xffffff,
+      fontSize: 20,
+    });
+    this.pauseButton.pivot.set(25, 25); // Center the button
+    this.pauseButton.onPress.on(() => this.handlePause());
+    this.settingsContainer.addChild(this.pauseButton);
   }
 
   private setupWalletConnection(): void {
@@ -408,55 +351,70 @@ export class MainScreen extends Container {
     this.mainContainer.x = centerX;
     this.mainContainer.y = centerY;
 
-    // Position connection UI with consistent spacing
+    // Calculate total height needed for all elements
+    const totalHeight = 60 + 40 + 30 + layout.RESOURCE_BAR.HEIGHT + 
+                       layout.PANEL_SPACING + layout.GAME_AREA.HEIGHT + 
+                       layout.PANEL_SPACING + layout.CONTROL_PANEL.HEIGHT;
+    
+    let currentY = -totalHeight / 2;
+
+    // Title at the top
+    this.titleLabel.anchor.set(0.5);
     this.titleLabel.x = 0;
-    this.titleLabel.y = -layout.CONNECTION.TITLE_SPACING;
+    this.titleLabel.y = currentY;
+    currentY += 60;
 
-    this.connectButton.x = 0; // Now centered due to anchor
-    this.connectButton.y = 0;
+    // Connection button
+    this.connectButton.x = 0;
+    this.connectButton.y = currentY;
+    currentY += 40;
 
+    // Username label
     this.usernameLabel.x = 0;
-    this.usernameLabel.y = layout.CONNECTION.USERNAME_SPACING;
+    this.usernameLabel.y = currentY;
+    currentY += 30;
 
-    // Position game UI using calculated layout
-    const gameLayout = this.calculateGameUILayout();
-
-    // Center resource bar horizontally
+    // Resource bar
     this.resourceBar.x = -layout.RESOURCE_BAR.WIDTH / 2;
-    this.resourceBar.y = gameLayout.resourceBarY;
+    this.resourceBar.y = currentY;
+    currentY += layout.RESOURCE_BAR.HEIGHT + layout.PANEL_SPACING;
 
-    // Center game area horizontally
+    // Game area
     this.gameArea.x = -layout.GAME_AREA.WIDTH / 2;
-    this.gameArea.y = gameLayout.gameAreaY;
+    this.gameArea.y = currentY;
+    currentY += layout.GAME_AREA.HEIGHT + layout.PANEL_SPACING;
 
-    // Center control panel horizontally
+    // Control panel
     this.controlPanel.x = -layout.CONTROL_PANEL.WIDTH / 2;
-    this.controlPanel.y = gameLayout.controlPanelY;
+    this.controlPanel.y = currentY;
+
+    // Settings in top-right corner
+    this.settingsContainer.x = (width / 2) - 60;
+    this.settingsContainer.y = -(height / 2) + 60;
   }
 
   /** Show screen with animations */
   public async show(): Promise<void> {
     engine().audio.bgm.play("main/sounds/bgm-main.mp3", { volume: 0.5 });
 
-    // Animate connection UI elements
-    const connectionElements = [this.titleLabel, this.connectButton];
-
-    // Animate game UI elements (if visible)
-    const gameElements = [this.resourceBar, this.gameArea, this.controlPanel];
+    // Animate all UI elements together
+    const allElements = [
+      this.titleLabel,
+      this.connectButton,
+      this.resourceBar,
+      this.gameArea,
+      this.controlPanel,
+      this.settingsContainer,
+    ];
 
     let finalPromise!: AnimationPlaybackControls;
 
-    // Animate visible elements
-    const elementsToAnimate = this.gameContainer.visible
-      ? gameElements
-      : connectionElements;
-
-    for (const element of elementsToAnimate) {
+    for (const element of allElements) {
       element.alpha = 0;
       finalPromise = animate(
         element,
         { alpha: 1 },
-        { duration: 0.5, delay: 0.2, ease: "backOut" },
+        { duration: 0.5, delay: 0.1, ease: "backOut" },
       );
     }
 
@@ -491,6 +449,13 @@ export class MainScreen extends Container {
     }
   }
 
+  /** Handle pause button press */
+  private handlePause(): void {
+    this.paused = !this.paused;
+    this.pauseButton.text = this.paused ? "▶️" : "⏸️";
+    console.log(this.paused ? "Game paused" : "Game resumed");
+  }
+
   /** Handle wallet state changes and update UI accordingly */
   private onWalletStateChange(state: WalletConnectionState): void {
     switch (state.status) {
@@ -498,7 +463,7 @@ export class MainScreen extends Container {
         this.connectButton.text = "Connect Wallet";
         this.connectButton.enabled = true;
         this.usernameLabel.visible = false;
-        this.showConnectionUI();
+        this.startGameButton.enabled = false;
         break;
 
       case ConnectionStatus.Connecting:
@@ -510,6 +475,7 @@ export class MainScreen extends Container {
       case ConnectionStatus.Connected: {
         this.connectButton.text = "Connected";
         this.connectButton.enabled = false;
+        this.startGameButton.enabled = true;
 
         // Show username or address
         const displayName = engine().wallet.getUserDisplayName();
@@ -520,9 +486,6 @@ export class MainScreen extends Container {
 
         console.log("Wallet connected successfully:", state.address);
         console.log("User display name:", displayName);
-
-        // Transition to game UI
-        this.showGameUI();
         break;
       }
 
@@ -530,32 +493,9 @@ export class MainScreen extends Container {
         this.connectButton.text = "Connection Failed";
         this.connectButton.enabled = true;
         this.usernameLabel.visible = false;
+        this.startGameButton.enabled = false;
         console.error("Wallet connection error:", state.error);
         break;
-    }
-  }
-
-  /** Show connection UI and hide game UI */
-  private showConnectionUI(): void {
-    this.connectionContainer.visible = true;
-    this.gameContainer.visible = false;
-  }
-
-  /** Show game UI and hide connection UI */
-  private async showGameUI(): Promise<void> {
-    this.connectionContainer.visible = false;
-    this.gameContainer.visible = true;
-
-    // Animate in the game UI
-    const gameElements = [this.resourceBar, this.gameArea, this.controlPanel];
-
-    for (const element of gameElements) {
-      element.alpha = 0;
-      animate(
-        element,
-        { alpha: 1 },
-        { duration: 0.6, delay: 0.1, ease: "backOut" },
-      );
     }
   }
 }
