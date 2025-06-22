@@ -8,6 +8,7 @@ import { Application, Assets, extensions, ResizePlugin } from "pixi.js";
 import "pixi.js/app";
 
 import { GameDataService } from "../graphql/services/GameDataService";
+import { WalletService } from "../wallet/WalletService";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - This is a dynamically generated file by AssetPack
@@ -33,12 +34,15 @@ extensions.add(CreationNavigationPlugin);
  * - Resize handling
  * - Visibility change handling (pause/resume sounds)
  * - Game data service for GraphQL integration
+ * - Wallet service for blockchain transactions
  *
  * It also initializes the PixiJS application and loads any assets in the `preload` bundle.
  */
 export class CreationEngine extends Application {
   /** Game data service for GraphQL queries and subscriptions */
   public gameData!: GameDataService;
+  /** Wallet service for blockchain transactions */
+  public wallet!: WalletService;
   /** Initialize the application */
   public async init(opts: Partial<ApplicationOptions>): Promise<void> {
     opts.resizeTo ??= window;
@@ -48,6 +52,9 @@ export class CreationEngine extends Application {
 
     // Initialize game data service
     this.gameData = new GameDataService();
+
+    // Initialize wallet service
+    this.wallet = new WalletService();
 
     // Append the application canvas to the document body
     document.getElementById("pixi-container")!.appendChild(this.canvas);

@@ -9,12 +9,15 @@ import type { GetPlayerStateResult } from "../graphql";
 export async function fetchPlayerData(playerAddress: string): Promise<void> {
   try {
     // Get player state (position and moves)
-    const playerState: GetPlayerStateResult = await engine().gameData.getPlayerState(playerAddress);
-    
+    const playerState: GetPlayerStateResult =
+      await engine().gameData.getPlayerState(playerAddress);
+
     if (playerState.position) {
-      console.log(`Player Position: (${playerState.position.x}, ${playerState.position.y})`);
+      console.log(
+        `Player Position: (${playerState.position.x}, ${playerState.position.y})`,
+      );
     }
-    
+
     if (playerState.moves) {
       console.log(`Remaining Moves: ${playerState.moves.remaining}`);
     }
@@ -28,24 +31,24 @@ export async function fetchPlayerData(playerAddress: string): Promise<void> {
  */
 export function watchPlayerState(playerAddress: string): () => void {
   console.log(`Starting to watch player state for: ${playerAddress}`);
-  
+
   // Set up real-time subscription to player state changes
   const unsubscribe = engine().gameData.watchPlayerState(
     playerAddress,
     (state: GetPlayerStateResult) => {
       console.log("Player state updated:", state);
-      
+
       // Update your UI here based on the new state
       if (state.position) {
         updatePlayerPosition(state.position.x, state.position.y);
       }
-      
+
       if (state.moves) {
         updateMovesDisplay(state.moves.remaining);
       }
-    }
+    },
   );
-  
+
   // Return unsubscribe function so caller can clean up
   return unsubscribe;
 }
@@ -57,7 +60,7 @@ export async function fetchAllPlayers(): Promise<void> {
   try {
     const positions = await engine().gameData.getAllPositions();
     console.log(`Found ${positions.length} players:`);
-    
+
     positions.forEach((position) => {
       console.log(`Player ${position.player}: (${position.x}, ${position.y})`);
     });
@@ -83,19 +86,19 @@ function updateMovesDisplay(moves: number): void {
  */
 export class GameDataExample {
   private unsubscribeCallbacks: (() => void)[] = [];
-  
+
   async initialize(playerAddress: string): Promise<void> {
     // Fetch initial data
     await fetchPlayerData(playerAddress);
-    
+
     // Start watching for updates
     const unsubscribe = watchPlayerState(playerAddress);
     this.unsubscribeCallbacks.push(unsubscribe);
-    
+
     // Fetch all players for multiplayer features
     await fetchAllPlayers();
   }
-  
+
   cleanup(): void {
     // Clean up all subscriptions when screen is destroyed
     this.unsubscribeCallbacks.forEach((unsubscribe) => unsubscribe());

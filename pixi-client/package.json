@@ -11,12 +11,14 @@
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",
+    "@cartridge/controller": "^0.7.13",
     "@esotericsoftware/spine-pixi-v8": "^4.2.74",
     "@pixi/sound": "^6.0.1",
     "@pixi/ui": "^2.2.2",
     "graphql": "^16.11.0",
     "motion": "^12.4.7",
-    "pixi.js": "^8.8.1"
+    "pixi.js": "^8.8.1",
+    "starknet": "^6.24.1"
   },
   "devDependencies": {
     "@assetpack/core": "^1.4.0",

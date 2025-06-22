@@ -8,6 +8,8 @@ import { engine } from "../../getEngine";
 import { PausePopup } from "../../popups/PausePopup";
 import { SettingsPopup } from "../../popups/SettingsPopup";
 import { Button } from "../../ui/Button";
+import type { WalletConnectionState } from "../../../wallet";
+import { ConnectionStatus } from "../../../wallet";
 
 import { Bouncer } from "./Bouncer";
 
@@ -21,8 +23,10 @@ export class MainScreen extends Container {
   private settingsButton: FancyButton;
   private addButton: FancyButton;
   private removeButton: FancyButton;
+  private connectButton: Button;
   private bouncer: Bouncer;
   private paused = false;
+  private walletUnsubscribe?: () => void;
 
   constructor() {
     super();
@@ -80,6 +84,20 @@ export class MainScreen extends Container {
     });
     this.removeButton.onPress.connect(() => this.bouncer.remove());
     this.addChild(this.removeButton);
+
+    // Create connect wallet button
+    this.connectButton = new Button({
+      text: "Connect Wallet",
+      width: 200,
+      height: 110,
+    });
+    this.connectButton.onPress.connect(() => this.handleConnectWallet());
+    this.addChild(this.connectButton);
+
+    // Subscribe to wallet state changes
+    this.walletUnsubscribe = engine().wallet.onConnectionChange((state) =>
+      this.onWalletStateChange(state),
+    );
   }
 
   /** Prepare the screen just before showing */
@@ -118,9 +136,13 @@ export class MainScreen extends Container {
     this.pauseButton.y = 30;
     this.settingsButton.x = width - 30;
     this.settingsButton.y = 30;
-    this.removeButton.x = width / 2 - 100;
+
+    // Position buttons in a row at the bottom
+    this.connectButton.x = width / 2 - 200;
+    this.connectButton.y = height - 75;
+    this.removeButton.x = width / 2 - 25;
     this.removeButton.y = height - 75;
-    this.addButton.x = width / 2 + 100;
+    this.addButton.x = width / 2 + 150;
     this.addButton.y = height - 75;
 
     this.bouncer.resize(width, height);
@@ -135,6 +157,7 @@ export class MainScreen extends Container {
       this.settingsButton,
       this.addButton,
       this.removeButton,
+      this.connectButton,
     ];
 
     let finalPromise!: AnimationPlaybackControls;
@@ -152,12 +175,53 @@ export class MainScreen extends Container {
   }
 
   /** Hide screen with animations */
-  public async hide() {}
+  public async hide() {
+    // Clean up wallet subscription
+    if (this.walletUnsubscribe) {
+      this.walletUnsubscribe();
+    }
+  }
 
   /** Auto pause the app when window go out of focus */
   public blur() {
     if (!engine().navigation.currentPopup) {
       engine().navigation.presentPopup(PausePopup);
+    }
+  }
+
+  /** Handle wallet connection button press */
+  private async handleConnectWallet(): Promise<void> {
+    try {
+      await engine().wallet.connect();
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
+    }
+  }
+
+  /** Handle wallet state changes and update UI accordingly */
+  private onWalletStateChange(state: WalletConnectionState): void {
+    switch (state.status) {
+      case ConnectionStatus.Disconnected:
+        this.connectButton.text = "Connect Wallet";
+        this.connectButton.enabled = true;
+        break;
+
+      case ConnectionStatus.Connecting:
+        this.connectButton.text = "Connecting...";
+        this.connectButton.enabled = false;
+        break;
+
+      case ConnectionStatus.Connected:
+        this.connectButton.text = "Connected";
+        this.connectButton.enabled = false;
+        console.log("Wallet connected successfully:", state.address);
+        break;
+
+      case ConnectionStatus.Error:
+        this.connectButton.text = "Connection Failed";
+        this.connectButton.enabled = true;
+        console.error("Wallet connection error:", state.error);
+        break;
     }
   }
 }

@@ -6,7 +6,7 @@ import { assetpackPlugin } from "./scripts/assetpack-vite-plugin";
 export default defineConfig({
   plugins: [assetpackPlugin()],
   server: {
-    port: 8080,
+    port: 7070,
     open: true,
   },
   define: {
