@@ -40,7 +40,7 @@ pub struct MoonRocks {
 }
 
 // Game model for Moon Bag - represents a single playable game instance
-#[derive(Drop, Serde)]
+#[derive(Copy, Drop, Serde)]
 #[dojo::model]
 pub struct Game {
     #[key]
@@ -54,8 +54,8 @@ pub struct Game {
     pub current_level: u8,
     pub is_active: bool,
     pub game_state: GameState,        // Current game state for progression
-    pub orb_bag: Array<OrbType>,      // All orbs currently in bag
-    pub orbs_drawn: Array<OrbType>,   // Track drawn orbs for bomb counter
+    pub orb_bag_size: u32,            // Number of orbs currently in bag
+    pub orbs_drawn_count: u32,        // Number of orbs drawn this level
 }
 
 // Counter model to track next game ID for each player
@@ -91,6 +91,33 @@ pub enum GameState {
     LevelComplete, // Level completed, awaiting player choice
     GameWon,       // All 7 levels completed
     GameLost,      // Health = 0 or bag empty before milestone
+}
+
+// Orb bag slot model - represents individual orb slots in the bag
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct OrbBagSlot {
+    #[key]
+    pub player: ContractAddress,
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub slot_index: u32,
+    pub orb_type: OrbType,
+    pub is_active: bool,  // false means slot is empty/orb was drawn
+}
+
+// Drawn orb model - tracks orbs that have been drawn from the bag
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct DrawnOrb {
+    #[key]
+    pub player: ContractAddress,
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub draw_index: u32,
+    pub orb_type: OrbType,
 }
 
 #[generate_trait]

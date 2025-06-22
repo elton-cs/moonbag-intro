@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x11103beb5f7f135b4c0745c5b759cc72a23828041d16339d8b8a486c08162f8",
-      "class_hash": "0x6afdc70fb0f0bc511567cc63ad44d79643b8de986e0902f9494f290787e7146",
+      "address": "0x1d38508546084b27a61ed91f072615a284ede8bd161c7f515786549e285617a",
+      "class_hash": "0x369d166e39d41ff189faf477c2d8d70aefd36cd59498b63e2c5fc3c72b12b8b",
       "abi": [
         {
           "type": "impl",
@@ -1616,7 +1616,13 @@
     },
     {
       "members": [],
-      "class_hash": "0x5c098f2e285b3c9af7fc3feafb9c20aa4a3f57d78f91352119d384d9babff10",
+      "class_hash": "0xddf3a321e9cd5fc3553a7d06e6522374e4cb2ac357b763fcd0979a72b0baa",
+      "tag": "di-DrawnOrb",
+      "selector": "0x82d1475398413399cdbc12cae66d1de7f2b50a09731ded3ff23dc6805f1a98"
+    },
+    {
+      "members": [],
+      "class_hash": "0x7e9d86ff2182f8f34b0c4944295cf8ea18dfcc24726fa0773102eb1849fcb6a",
       "tag": "di-Game",
       "selector": "0x2d80900338aad8f8000d3bdec178807b4e9c224d4211d843b6616482acb5aae"
     },
@@ -1637,6 +1643,12 @@
       "class_hash": "0x3bdd8b9fc059328965a1d42d0491d8b86cc8d56bba06a3cf4fd66286debe726",
       "tag": "di-Moves",
       "selector": "0xf9b3361ecd0207357b703079e95e035572c2bf2b236611dd97111225abe9f"
+    },
+    {
+      "members": [],
+      "class_hash": "0x2e3105784649c55f6d09697b9c3b5302033951f284aa900b13740c00274e232",
+      "tag": "di-OrbBagSlot",
+      "selector": "0x57359e4256487e0e8d2102e529bdbe0eafd16c659183907b5b4228d62dc7954"
     },
     {
       "members": [],

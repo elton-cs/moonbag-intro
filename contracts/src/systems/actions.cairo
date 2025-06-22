@@ -28,7 +28,7 @@ pub enum Source {
 #[dojo::contract]
 pub mod actions {
     use super::{IActions, IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
-    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter, MoonRocks, OrbType, ActiveGame, GameState};
+    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter, MoonRocks, OrbType, ActiveGame, GameState, OrbBagSlot, DrawnOrb};
 
     use core::num::traits::SaturatingSub;
     use dojo::model::ModelStorage;
@@ -162,15 +162,6 @@ pub mod actions {
 
             let current_game_id = game_counter.next_game_id;
 
-            // Create starting orb bag with PRD starting orbs
-            let mut starting_orb_bag = array![];
-            starting_orb_bag.append(OrbType::SingleBomb);
-            starting_orb_bag.append(OrbType::SingleBomb);
-            starting_orb_bag.append(OrbType::FivePoints);
-            starting_orb_bag.append(OrbType::FivePoints);
-            starting_orb_bag.append(OrbType::FivePoints);
-            starting_orb_bag.append(OrbType::Health);
-
             // Create new game instance with PRD starting values
             let new_game = Game {
                 player,
@@ -182,9 +173,17 @@ pub mod actions {
                 current_level: INIT_LEVEL,
                 is_active: true,
                 game_state: GameState::Active,
-                orb_bag: starting_orb_bag,
-                orbs_drawn: array![],
+                orb_bag_size: 6,  // Starting with 6 orbs
+                orbs_drawn_count: 0,
             };
+
+            // Create starting orb bag slots with PRD starting orbs
+            let orb_slot_0 = OrbBagSlot { player, game_id: current_game_id, slot_index: 0, orb_type: OrbType::SingleBomb, is_active: true };
+            let orb_slot_1 = OrbBagSlot { player, game_id: current_game_id, slot_index: 1, orb_type: OrbType::SingleBomb, is_active: true };
+            let orb_slot_2 = OrbBagSlot { player, game_id: current_game_id, slot_index: 2, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_3 = OrbBagSlot { player, game_id: current_game_id, slot_index: 3, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_4 = OrbBagSlot { player, game_id: current_game_id, slot_index: 4, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_5 = OrbBagSlot { player, game_id: current_game_id, slot_index: 5, orb_type: OrbType::Health, is_active: true };
 
             // Increment the counter for next game
             game_counter.next_game_id += 1;
@@ -199,6 +198,14 @@ pub mod actions {
             world.write_model(@new_game);
             world.write_model(@game_counter);
             world.write_model(@new_active_game);
+            
+            // Write all orb bag slots
+            world.write_model(@orb_slot_0);
+            world.write_model(@orb_slot_1);
+            world.write_model(@orb_slot_2);
+            world.write_model(@orb_slot_3);
+            world.write_model(@orb_slot_4);
+            world.write_model(@orb_slot_5);
         }
 
         fn pull_orb(ref self: ContractState) {
@@ -212,16 +219,39 @@ pub mod actions {
             // Get the active game data
             let mut game: Game = world.read_model((player, active_game.game_id));
             assert(game.is_active, 'Game is not active');
-            assert(game.orb_bag.len() > 0, 'Orb bag is empty');
+            assert(game.orb_bag_size > 0, 'Orb bag is empty');
 
-            // Generate pseudo-random index for orb selection
-            let random_index = get_pseudo_random(player, game.game_id, game.orb_bag.len());
+            // Generate pseudo-random index for orb selection within bag size
+            let random_index = get_pseudo_random(player, game.game_id, game.orb_bag_size);
             
-            // Get the selected orb
-            let selected_orb = *game.orb_bag.at(random_index);
+            // Find the Nth active orb slot (where N = random_index)
+            let mut active_count = 0;
+            let mut selected_slot_index = 0;
+            let mut selected_orb_type = OrbType::SingleBomb;
+            let mut found_slot = false;
+            
+            // Search through all possible slots to find the random_index-th active one
+            let mut slot_idx = 0;
+            loop {
+                if slot_idx == 100 { break; } // Safety limit to prevent infinite loop
+                
+                let orb_slot: OrbBagSlot = world.read_model((player, game.game_id, slot_idx));
+                if orb_slot.is_active {
+                    if active_count == random_index {
+                        selected_slot_index = slot_idx;
+                        selected_orb_type = orb_slot.orb_type;
+                        found_slot = true;
+                        break;
+                    }
+                    active_count += 1;
+                }
+                slot_idx += 1;
+            };
+            
+            assert(found_slot, 'Failed to find active orb');
 
             // Apply orb effects to game state
-            match selected_orb {
+            match selected_orb_type {
                 OrbType::SingleBomb => {
                     game.health = game.health.saturating_sub(1);
                 },
@@ -233,33 +263,28 @@ pub mod actions {
                 },
             }
 
-            // Remove orb from bag and add to drawn
-            let mut new_orb_bag = array![];
-            let mut i = 0;
-            loop {
-                if i == game.orb_bag.len() { break; }
-                if i != random_index {
-                    new_orb_bag.append(*game.orb_bag.at(i));
-                }
-                i += 1;
-            };
-            game.orb_bag = new_orb_bag;
+            // Deactivate the selected orb slot
+            let mut selected_slot: OrbBagSlot = world.read_model((player, game.game_id, selected_slot_index));
+            selected_slot.is_active = false;
+            world.write_model(@selected_slot);
             
-            // Add to drawn orbs
-            let mut new_orbs_drawn = array![];
-            let mut j = 0;
-            loop {
-                if j == game.orbs_drawn.len() { break; }
-                new_orbs_drawn.append(*game.orbs_drawn.at(j));
-                j += 1;
+            // Decrease bag size and increase drawn count
+            game.orb_bag_size -= 1;
+            game.orbs_drawn_count += 1;
+            
+            // Add to drawn orbs tracking
+            let drawn_orb = DrawnOrb {
+                player,
+                game_id: game.game_id,
+                draw_index: game.orbs_drawn_count - 1,
+                orb_type: selected_orb_type,
             };
-            new_orbs_drawn.append(selected_orb);
-            game.orbs_drawn = new_orbs_drawn;
+            world.write_model(@drawn_orb);
 
             // Check win/lose conditions
             let milestone_points = get_milestone_points(game.current_level);
             
-            if game.health == 0 || game.orb_bag.len() == 0 {
+            if game.health == 0 || game.orb_bag_size == 0 {
                 // Loss condition: health depleted or bag empty before milestone
                 game.game_state = GameState::GameLost;
                 game.is_active = false;
@@ -321,17 +346,24 @@ pub mod actions {
             game.current_level = next_level;
             game.game_state = GameState::Active;
             game.multiplier = INIT_MULTIPLIER; // Reset multiplier between levels
-            game.orbs_drawn = array![]; // Clear drawn orbs for new level
+            game.orbs_drawn_count = 0; // Clear drawn orbs count for new level
+            game.orb_bag_size = 6; // Reset bag size to starting size
 
-            // Refill orb bag for new level (using same starting orbs for now)
-            let mut new_orb_bag = array![];
-            new_orb_bag.append(OrbType::SingleBomb);
-            new_orb_bag.append(OrbType::SingleBomb);
-            new_orb_bag.append(OrbType::FivePoints);
-            new_orb_bag.append(OrbType::FivePoints);
-            new_orb_bag.append(OrbType::FivePoints);
-            new_orb_bag.append(OrbType::Health);
-            game.orb_bag = new_orb_bag;
+            // Reset all orb bag slots for new level (using same starting orbs for now)
+            let orb_slot_0 = OrbBagSlot { player, game_id: game.game_id, slot_index: 0, orb_type: OrbType::SingleBomb, is_active: true };
+            let orb_slot_1 = OrbBagSlot { player, game_id: game.game_id, slot_index: 1, orb_type: OrbType::SingleBomb, is_active: true };
+            let orb_slot_2 = OrbBagSlot { player, game_id: game.game_id, slot_index: 2, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_3 = OrbBagSlot { player, game_id: game.game_id, slot_index: 3, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_4 = OrbBagSlot { player, game_id: game.game_id, slot_index: 4, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_5 = OrbBagSlot { player, game_id: game.game_id, slot_index: 5, orb_type: OrbType::Health, is_active: true };
+            
+            // Write updated orb slots
+            world.write_model(@orb_slot_0);
+            world.write_model(@orb_slot_1);
+            world.write_model(@orb_slot_2);
+            world.write_model(@orb_slot_3);
+            world.write_model(@orb_slot_4);
+            world.write_model(@orb_slot_5);
 
             // Write updated game state
             world.write_model(@game);
