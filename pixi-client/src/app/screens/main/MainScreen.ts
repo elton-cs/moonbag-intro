@@ -544,13 +544,29 @@ export class MainScreen extends Container {
   private async handleStartGame(): Promise<void> {
     try {
       console.log("Starting new Moon Bag game...");
+      this.startGameButton.enabled = false;
+      this.startGameButton.text = "🔄 STARTING...";
+      
       await engine().wallet.spawnGame();
       console.log("Game started successfully!");
       
-      // Refresh blockchain data after successful transaction
-      await this.refreshMoonBagData();
+      // Refresh blockchain data with polling after successful transaction
+      await this.refreshMoonBagDataWithPolling();
+      
+      // Button state will be updated by game state logic
+      this.startGameButton.enabled = true;
+      this.startGameButton.text = "🎮 START";
     } catch (error) {
       console.error("Failed to start game:", error);
+      
+      // Re-enable button on error
+      this.startGameButton.enabled = true;
+      this.startGameButton.text = "❌ FAILED";
+      
+      // Reset button text after showing error
+      setTimeout(() => {
+        this.startGameButton.text = "🎮 START";
+      }, 2000);
     }
   }
 
@@ -564,10 +580,10 @@ export class MainScreen extends Container {
       await engine().wallet.pullOrb();
       console.log("Orb pulled successfully!");
       
-      // Refresh blockchain data after successful transaction
-      await this.refreshMoonBagData();
+      // Refresh blockchain data with polling after successful transaction
+      await this.refreshMoonBagDataWithPolling();
       
-      // Re-enable button (will be updated by game state logic)
+      // Button state will be updated by game state logic
       this.pullOrbButton.enabled = true;
       this.pullOrbButton.text = "🎲 PULL ORB";
     } catch (error) {
@@ -594,8 +610,8 @@ export class MainScreen extends Container {
       await engine().wallet.advanceToNextLevel();
       console.log("Advanced to next level successfully!");
       
-      // Refresh blockchain data after successful transaction
-      await this.refreshMoonBagData();
+      // Refresh blockchain data with polling after successful transaction
+      await this.refreshMoonBagDataWithPolling();
       
       // Button visibility will be updated by game state logic
     } catch (error) {
@@ -622,8 +638,8 @@ export class MainScreen extends Container {
       await engine().wallet.quitGame();
       console.log("Game quit successfully!");
       
-      // Refresh blockchain data after successful transaction
-      await this.refreshMoonBagData();
+      // Refresh blockchain data with polling after successful transaction
+      await this.refreshMoonBagDataWithPolling();
       
       // Button visibility will be updated by game state logic
     } catch (error) {
@@ -666,8 +682,8 @@ export class MainScreen extends Container {
       console.log("Moon rocks gift successful!", result);
       this.giftRocksButton.text = "✅ GIFTED!";
       
-      // Refresh blockchain data after successful transaction
-      await this.refreshMoonBagData();
+      // Refresh blockchain data with polling after successful transaction
+      await this.refreshMoonBagDataWithPolling();
       
       // Keep button disabled after successful gift
       setTimeout(() => {
@@ -683,7 +699,7 @@ export class MainScreen extends Container {
       
       // Reset button text after showing error
       setTimeout(() => {
-        this.giftRocksButton.text = "🎁 GIFT ROCKS";
+        this.giftRocksButton.text = "🎁 GIFT";
       }, 2000);
     }
   }
@@ -728,7 +744,35 @@ export class MainScreen extends Container {
     }
   }
 
-  /** Refresh Moon Bag data with fresh network fetch */
+  /** Refresh Moon Bag data with fresh network fetch and polling */
+  private async refreshMoonBagDataWithPolling(): Promise<void> {
+    try {
+      const playerAddress = engine().wallet.getState().address;
+      if (!playerAddress) {
+        console.log("🚫 No player address available for refresh");
+        return;
+      }
+
+      console.log("🔄 Starting data refresh with polling...");
+      
+      // Wait a bit for transaction to be indexed by Torii
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Start polling for updates
+      await this.gameDataService.pollForUpdates(
+        playerAddress,
+        (data: MoonBagData) => {
+          console.log("🔄 Polling update received, updating UI");
+          this.updateUIWithMoonBagData(data);
+        }
+      );
+
+    } catch (error) {
+      console.error("❌ Error refreshing Moon Bag data:", error);
+    }
+  }
+
+  /** Legacy refresh method for non-transaction updates */
   private async refreshMoonBagData(): Promise<void> {
     try {
       const playerAddress = engine().wallet.getState().address;
@@ -738,7 +782,8 @@ export class MainScreen extends Container {
       }
 
       console.log("🔄 Refreshing Moon Bag data...");
-      await this.gameDataService.refetchMoonBagData(playerAddress);
+      const freshData = await this.gameDataService.refetchMoonBagData(playerAddress);
+      this.updateUIWithMoonBagData(freshData);
       console.log("✅ Moon Bag data refreshed!");
 
     } catch (error) {

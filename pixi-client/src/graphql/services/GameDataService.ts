@@ -541,10 +541,14 @@ export class GameDataService {
    */
   async refetchMoonBagData(playerAddress: string): Promise<MoonBagData> {
     try {
+      // Clear Apollo cache for this player's data to ensure fresh fetch
+      await apolloClient.clearStore();
+      
       const result = await apolloClient.query({
         query: GET_ALL_MOON_BAG_DATA,
         variables: { player: playerAddress },
         fetchPolicy: "network-only",
+        errorPolicy: "all",
       });
 
       console.log("🔄 Refetched Moon Bag Data (Raw):", result.data);
@@ -557,6 +561,70 @@ export class GameDataService {
       console.error("Error refetching Moon Bag data:", error);
       throw error;
     }
+  }
+
+  /**
+   * Poll for Moon Bag data updates with retry mechanism
+   */
+  async pollForUpdates(
+    playerAddress: string,
+    callback: (data: MoonBagData) => void,
+    maxAttempts: number = 20, // 10 seconds at 500ms intervals
+    intervalMs: number = 500
+  ): Promise<void> {
+    console.log(`🔄 Starting polling for ${maxAttempts} attempts every ${intervalMs}ms`);
+    
+    let attempts = 0;
+    let lastDataHash: string | null = null;
+    
+    const poll = async (): Promise<void> => {
+      attempts++;
+      
+      try {
+        const freshData = await this.refetchMoonBagData(playerAddress);
+        
+        // Create a simple hash of the data to detect changes
+        const currentDataHash = JSON.stringify({
+          moonRocks: freshData.moonRocks?.amount || 0,
+          gameId: freshData.activeGame?.game_id || 0,
+          health: freshData.games[0]?.health || 0,
+          points: freshData.games[0]?.points || 0,
+          cheddah: freshData.games[0]?.cheddah || 0,
+          orbCount: freshData.orbBagSlots?.length || 0
+        });
+        
+        // If this is the first poll or data has changed, update UI
+        if (lastDataHash === null || currentDataHash !== lastDataHash) {
+          console.log(`🔄 Data changed on attempt ${attempts}, updating UI`);
+          callback(freshData);
+          lastDataHash = currentDataHash;
+          
+          // Stop polling if we detect meaningful changes
+          if (lastDataHash !== null && attempts > 1) {
+            console.log("✅ Polling stopped - data changes detected");
+            return;
+          }
+        }
+        
+        // Continue polling if we haven't reached max attempts
+        if (attempts < maxAttempts) {
+          setTimeout(poll, intervalMs);
+        } else {
+          console.log("⏱️ Polling stopped - max attempts reached");
+        }
+        
+      } catch (error) {
+        console.error(`❌ Polling attempt ${attempts} failed:`, error);
+        
+        // Continue polling on error unless we've reached max attempts
+        if (attempts < maxAttempts) {
+          setTimeout(poll, intervalMs);
+        }
+      }
+    };
+    
+    // Start first poll immediately
+    poll();
   }
 
   /**
