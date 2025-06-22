@@ -66,6 +66,15 @@ pub struct GameCounter {
     pub next_game_id: u32,
 }
 
+// Track active game per player for single-game restriction
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct ActiveGame {
+    #[key]
+    pub player: ContractAddress,
+    pub game_id: u32,  // 0 = no active game
+}
+
 // Orb types for Moon Bag game - simple enum for array storage
 #[derive(Serde, Copy, Drop, Introspect, PartialEq)]
 pub enum OrbType {

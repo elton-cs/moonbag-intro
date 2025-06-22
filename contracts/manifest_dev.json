@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x1c716e88995cd6d2fe7a142c3bdf28cb8af9d550ee4ff0478b5fd71c5acae3a",
-      "class_hash": "0x4c6fc25c48399ec088e1266e638a312c61a3ec83546db36340b7efad0bec985",
+      "address": "0x4f42c6e9dd469dc503de6ca03f4e5b01e7e859438d13fb054235bbda8ed35c5",
+      "class_hash": "0x324080b79bcd07b8d17002250b74fa118377f559808d53e9c2f38e20c087d2a",
       "abi": [
         {
           "type": "impl",
@@ -1422,6 +1422,13 @@
             {
               "type": "function",
               "name": "spawn_game",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "pull_orb",
               "inputs": [],
               "outputs": [],
               "state_mutability": "external"
@@ -1575,6 +1582,7 @@
       "systems": [
         "spawn",
         "spawn_game",
+        "pull_orb",
         "gift_moonrocks",
         "move",
         "move_random",
@@ -1584,6 +1592,12 @@
   ],
   "libraries": [],
   "models": [
+    {
+      "members": [],
+      "class_hash": "0x1cb45f5d1a08c0374fdf7b3f226c5d4fdeb3483eb402f071903b6962d7ff61",
+      "tag": "di-ActiveGame",
+      "selector": "0x324c4e42f86024abc37139a28503f5ef2cc6b744a6641c938ca61d4b147611"
+    },
     {
       "members": [],
       "class_hash": "0x1ef4e91f6ec67dca910c64785ec937ded3f000b93878be75d859dd0b075424f",

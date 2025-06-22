@@ -30,6 +30,11 @@ const controllerOpts = {
             description: 'Start a new Moon Bag game instance (costs 10 Moon Rocks)',
           },
           {
+            name: 'Pull Orb',
+            entrypoint: 'pull_orb',
+            description: 'Draw a random orb from your bag and apply its effects',
+          },
+          {
             name: 'Gift Moon Rocks',
             entrypoint: 'gift_moonrocks',
             description: 'Receive 500 Moon Rocks for new players',

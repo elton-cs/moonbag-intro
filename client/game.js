@@ -11,6 +11,7 @@ const MOVES_MODEL = 'di-Moves';
 const GAME_MODEL = 'di-Game';
 const GAME_COUNTER_MODEL = 'di-GameCounter';
 const MOON_ROCKS_MODEL = 'di-MoonRocks';
+const ACTIVE_GAME_MODEL = 'di-ActiveGame';
 
 // Game constants
 const GAME_ENTRY_COST = 10;
@@ -52,6 +53,11 @@ function updateFromEntityData(entity) {
     if (entity.models[MOON_ROCKS_MODEL]) {
       const moonRocks = entity.models[MOON_ROCKS_MODEL];
       updateMoonRocksDisplay(moonRocks.amount.value);
+    }
+
+    if (entity.models[ACTIVE_GAME_MODEL]) {
+      const activeGame = entity.models[ACTIVE_GAME_MODEL];
+      updateActiveGameDisplay(activeGame);
     }
   }
 }
@@ -172,6 +178,10 @@ function initGame(account, manifest) {
     await spawnGame(account, manifest);
   };
 
+  document.getElementById('pull-orb-button').onclick = async () => {
+    await pullOrb(account, manifest);
+  };
+
   document.getElementById('gift-moonrocks-button').onclick = async () => {
     await giftMoonRocks(account, manifest);
   };
@@ -262,6 +272,46 @@ async function giftMoonRocks(account, manifest) {
   });
 
   console.log('Moon rocks gift transaction sent:', tx);
+}
+
+async function pullOrb(account, manifest) {
+  const tx = await account.execute({
+    contractAddress: manifest.contracts.find((contract) => contract.tag === ACTION_CONTRACT)
+      .address,
+    entrypoint: 'pull_orb',
+    calldata: [],
+  });
+
+  console.log('Pull orb transaction sent:', tx);
+}
+
+function updateActiveGameDisplay(activeGame) {
+  const hasActiveGame = activeGame.game_id.value > 0;
+  
+  // Control spawn game button
+  const spawnGameButton = document.getElementById('spawn-game-button');
+  if (spawnGameButton) {
+    if (hasActiveGame) {
+      spawnGameButton.disabled = true;
+      spawnGameButton.textContent = 'Game In Progress';
+    } else {
+      spawnGameButton.disabled = false;
+      spawnGameButton.textContent = 'Spawn Game';
+    }
+  }
+  
+  // Control pull orb button
+  const pullOrbButton = document.getElementById('pull-orb-button');
+  if (pullOrbButton) {
+    if (hasActiveGame) {
+      pullOrbButton.style.display = 'block';
+      pullOrbButton.disabled = false;
+    } else {
+      pullOrbButton.style.display = 'none';
+    }
+  }
+  
+  console.log('Active game updated:', activeGame);
 }
 
 function updateOrbBagFromGame(game) {
