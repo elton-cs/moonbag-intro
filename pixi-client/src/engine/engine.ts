@@ -7,6 +7,8 @@ import type {
 import { Application, Assets, extensions, ResizePlugin } from "pixi.js";
 import "pixi.js/app";
 
+import { GameDataService } from "../graphql/services/GameDataService";
+
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - This is a dynamically generated file by AssetPack
 import manifest from "../manifest.json";
@@ -30,16 +32,22 @@ extensions.add(CreationNavigationPlugin);
  * - Audio manager
  * - Resize handling
  * - Visibility change handling (pause/resume sounds)
+ * - Game data service for GraphQL integration
  *
  * It also initializes the PixiJS application and loads any assets in the `preload` bundle.
  */
 export class CreationEngine extends Application {
+  /** Game data service for GraphQL queries and subscriptions */
+  public gameData!: GameDataService;
   /** Initialize the application */
   public async init(opts: Partial<ApplicationOptions>): Promise<void> {
     opts.resizeTo ??= window;
     opts.resolution ??= getResolution();
 
     await super.init(opts);
+
+    // Initialize game data service
+    this.gameData = new GameDataService();
 
     // Append the application canvas to the document body
     document.getElementById("pixi-container")!.appendChild(this.canvas);
@@ -61,6 +69,12 @@ export class CreationEngine extends Application {
     options: DestroyOptions = false,
   ): void {
     document.removeEventListener("visibilitychange", this.visibilityChange);
+
+    // Clean up GraphQL subscriptions
+    if (this.gameData) {
+      this.gameData.clearSubscriptions();
+    }
+
     super.destroy(rendererDestroyOptions, options);
   }
 
