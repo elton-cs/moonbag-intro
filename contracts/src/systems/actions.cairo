@@ -284,8 +284,8 @@ pub mod actions {
             // Check win/lose conditions
             let milestone_points = get_milestone_points(game.current_level);
             
-            if game.health == 0 || game.orb_bag_size == 0 {
-                // Loss condition: health depleted or bag empty before milestone
+            if game.health == 0 {
+                // Loss condition: health depleted
                 game.game_state = GameState::GameLost;
                 game.is_active = false;
                 // Clear active game tracking
@@ -312,6 +312,16 @@ pub mod actions {
                     // Award Cheddah for level completion
                     game.cheddah += get_cheddah_reward(game.current_level);
                 }
+            } else if game.orb_bag_size == 0 {
+                // Loss condition: bag empty before milestone reached
+                game.game_state = GameState::GameLost;
+                game.is_active = false;
+                // Clear active game tracking
+                let cleared_active_game = ActiveGame {
+                    player,
+                    game_id: 0,
+                };
+                world.write_model(@cleared_active_game);
             }
 
             // Write updated game state
