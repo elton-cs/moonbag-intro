@@ -162,7 +162,7 @@
 
     <script type="module">
       import init, { ToriiClient } from './pkg/dojo_c.js';
-      import { initGame, updateFromEntityData } from './game.js';
+      import { initGame, updateFromEntityData, fetchGameDataWithGraphQL, processGraphQLResponse } from './game.js';
       import controllerOpts from './controller.js';
       import Controller from '@cartridge/controller';
       import manifest from '../contracts/manifest_dev.json' assert { type: 'json' };
@@ -193,13 +193,21 @@
           historical: false,
         };
 
+        // Fetch initial data using both methods
         let entities = await torii.getEntities(query);
-        console.log(entities);
+        console.log('Torii entities:', entities);
 
         if (entities.items.length > 0) {
           entities.items.forEach((entity) => {
             updateFromEntityData(entity);
           });
+        }
+
+        // Also fetch data using GraphQL for comprehensive initial load
+        const graphqlData = await fetchGameDataWithGraphQL('http://localhost:8080', account.address);
+        if (graphqlData) {
+          processGraphQLResponse(graphqlData, account.address);
+          console.log('Initial GraphQL data loaded successfully');
         }
 
         const subscription = await torii.onEntityUpdated(

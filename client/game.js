@@ -601,4 +601,344 @@ function updateGameStateUI(game) {
   console.log('Game state UI updated:', gameState);
 }
 
-export { initGame, updateFromEntityData };
+// GraphQL query for fetching Moon Bag game data
+async function fetchGameDataWithGraphQL(toriiEndpoint, playerAddress) {
+  const query = `
+    {
+      diMoonRocksModels {
+        edges {
+          node {
+            player
+            amount
+          }
+        }
+      }
+      
+      diGameModels {
+        edges {
+          node {
+            player
+            game_id
+            health
+            points
+            multiplier
+            cheddah
+            current_level
+            is_active
+            game_state
+            orb_bag_size
+            orbs_drawn_count
+          }
+        }
+      }
+      
+      diOrbBagSlotModels {
+        edges {
+          node {
+            player
+            game_id
+            slot_index
+            orb_type
+            is_active
+          }
+        }
+      }
+    }
+  `;
+
+  try {
+    const response = await fetch(`${toriiEndpoint}/graphql`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query })
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('GraphQL response:', data);
+    
+    if (data.errors) {
+      console.error('GraphQL errors:', data.errors);
+      return null;
+    }
+
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching GraphQL data:', error);
+    return null;
+  }
+}
+
+// Process GraphQL response and update UI
+function processGraphQLResponse(graphqlData, playerAddress) {
+  if (!graphqlData) return;
+
+  // Process Moon Rocks data
+  const moonRocksData = graphqlData.diMoonRocksModels?.edges?.find(
+    edge => edge.node.player === playerAddress
+  );
+  if (moonRocksData) {
+    updateMoonRocksDisplay(moonRocksData.node.amount);
+  }
+
+  // Process Game data
+  const gameData = graphqlData.diGameModels?.edges?.find(
+    edge => edge.node.player === playerAddress && edge.node.is_active
+  );
+  if (gameData) {
+    updateGameDisplayFromGraphQL(gameData.node);
+  }
+
+  // Process Orb Bag data
+  const orbBagData = graphqlData.diOrbBagSlotModels?.edges?.filter(
+    edge => edge.node.player === playerAddress && edge.node.is_active
+  );
+  if (orbBagData && gameData) {
+    updateOrbBagFromGraphQL(orbBagData, gameData.node.game_id);
+  }
+}
+
+// Update game display from GraphQL data
+function updateGameDisplayFromGraphQL(gameNode) {
+  // Update individual game stats
+  const healthDisplay = document.getElementById('health-display');
+  if (healthDisplay) {
+    healthDisplay.textContent = `Health: ${gameNode.health}`;
+  }
+
+  const pointsDisplay = document.getElementById('points-display');
+  if (pointsDisplay) {
+    pointsDisplay.textContent = `Points: ${gameNode.points}`;
+  }
+
+  const multiplierDisplay = document.getElementById('multiplier-display');
+  if (multiplierDisplay) {
+    const multiplierValue = (gameNode.multiplier / 100).toFixed(1);
+    multiplierDisplay.textContent = `Multiplier: ${multiplierValue}x`;
+  }
+
+  const cheddahDisplay = document.getElementById('cheddah-display');
+  if (cheddahDisplay) {
+    cheddahDisplay.textContent = `Cheddah: ${gameNode.cheddah}`;
+  }
+
+  const levelDisplay = document.getElementById('level-display');
+  if (levelDisplay) {
+    levelDisplay.textContent = `Level: ${gameNode.current_level}`;
+  }
+
+  const gameIdDisplay = document.getElementById('game-id-display');
+  if (gameIdDisplay) {
+    gameIdDisplay.textContent = `Game #${gameNode.game_id}`;
+  }
+
+  // Update level progress and game state UI
+  updateLevelProgressFromGraphQL(gameNode);
+  updateGameStateUIFromGraphQL(gameNode);
+
+  // Update active game display
+  updateActiveGameDisplayFromGraphQL(gameNode);
+}
+
+// Update orb bag from GraphQL data
+function updateOrbBagFromGraphQL(orbBagSlots, gameId) {
+  const orbBagDisplay = document.getElementById('orb-bag-display');
+  if (!orbBagDisplay) return;
+  
+  // Clear existing orbs
+  orbBagDisplay.innerHTML = '';
+  
+  console.log('GraphQL orb bag slots:', orbBagSlots);
+  
+  // Filter slots for the current game and sort by slot_index
+  const gameOrbs = orbBagSlots
+    .filter(edge => edge.node.game_id === gameId && edge.node.is_active)
+    .sort((a, b) => a.node.slot_index - b.node.slot_index);
+  
+  if (gameOrbs.length > 0) {
+    // Count orbs by type for display
+    const orbCounts = {};
+    
+    gameOrbs.forEach((orbSlot) => {
+      const orbType = orbSlot.node.orb_type;
+      console.log(`Orb slot ${orbSlot.node.slot_index}: ${orbType}`);
+      
+      if (orbType) {
+        orbCounts[orbType] = (orbCounts[orbType] || 0) + 1;
+      }
+    });
+    
+    console.log('Orb counts from GraphQL:', orbCounts);
+    
+    // Create display elements for each orb type
+    Object.entries(orbCounts).forEach(([orbType, count]) => {
+      const orbInfo = ORB_INFO[orbType];
+      if (orbInfo) {
+        const orbElement = document.createElement('div');
+        orbElement.className = 'orb-item p-3 border border-gray-600 rounded-lg text-sm bg-gray-700/50';
+        
+        orbElement.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl">${orbInfo.emoji}</span>
+            <div class="flex-1">
+              <div class="font-semibold text-white">${orbInfo.name}</div>
+              <div class="text-gray-400 text-xs">${orbInfo.effect}</div>
+            </div>
+            <div class="text-blue-400 font-bold text-lg">x${count}</div>
+          </div>
+        `;
+        
+        orbBagDisplay.appendChild(orbElement);
+      }
+    });
+    
+    // Add total count display
+    const totalElement = document.createElement('div');
+    totalElement.className = 'text-center text-gray-300 text-sm mt-2 pt-2 border-t border-gray-600';
+    totalElement.textContent = `Total Orbs: ${gameOrbs.length}`;
+    orbBagDisplay.appendChild(totalElement);
+    
+  } else {
+    orbBagDisplay.innerHTML = '<div class="text-gray-400 text-center py-4">No orbs in bag yet</div>';
+  }
+}
+
+// Update level progress from GraphQL data
+function updateLevelProgressFromGraphQL(gameNode) {
+  console.log('updateLevelProgressFromGraphQL called with game:', gameNode);
+  
+  const currentLevel = gameNode.current_level;
+  const currentPoints = gameNode.points;
+  const gameState = gameNode.game_state;
+  
+  const milestonePoints = MILESTONE_POINTS[currentLevel];
+  
+  console.log(`Level: ${currentLevel}, Points: ${currentPoints}, Milestone: ${milestonePoints}, State: ${gameState}`);
+  
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  const levelProgress = document.getElementById('level-progress');
+  
+  if (progressBar && progressText && levelProgress) {
+    // Show progress bar during active gameplay
+    if (gameState === 'Active') {
+      levelProgress.style.display = 'block';
+      
+      const progressPercent = Math.min((currentPoints / milestonePoints) * 100, 100);
+      progressBar.style.width = `${progressPercent}%`;
+      progressText.textContent = `${currentPoints} / ${milestonePoints}`;
+      
+      console.log(`Progress updated: ${progressPercent}% (${currentPoints}/${milestonePoints})`);
+      
+      // Change color based on progress
+      if (progressPercent >= 100) {
+        progressBar.className = 'bg-green-500 h-2 rounded-full transition-all duration-300';
+      } else if (progressPercent >= 75) {
+        progressBar.className = 'bg-yellow-500 h-2 rounded-full transition-all duration-300';
+      } else {
+        progressBar.className = 'bg-blue-500 h-2 rounded-full transition-all duration-300';
+      }
+    } else {
+      levelProgress.style.display = 'none';
+      console.log('Progress bar hidden due to game state:', gameState);
+    }
+  }
+}
+
+// Update game state UI from GraphQL data
+function updateGameStateUIFromGraphQL(gameNode) {
+  const gameState = gameNode.game_state;
+  
+  const pullOrbButton = document.getElementById('pull-orb-button');
+  const levelCompleteActions = document.getElementById('level-complete-actions');
+  const gameOverActions = document.getElementById('game-over-actions');
+  const gameOverMessage = document.getElementById('game-over-message');
+  const advanceLevelButton = document.getElementById('advance-level-button');
+  
+  // Hide all action sections first
+  if (levelCompleteActions) levelCompleteActions.style.display = 'none';
+  if (gameOverActions) gameOverActions.style.display = 'none';
+  
+  switch (gameState) {
+    case 'Active':
+      if (pullOrbButton) pullOrbButton.disabled = false;
+      break;
+      
+    case 'LevelComplete':
+      if (pullOrbButton) pullOrbButton.disabled = true;
+      if (levelCompleteActions) {
+        levelCompleteActions.style.display = 'block';
+        
+        // Check if we can advance to next level (not at max level)
+        const currentLevel = gameNode.current_level;
+        const nextLevelCost = LEVEL_COSTS[currentLevel + 1];
+        if (advanceLevelButton && currentLevel < 7 && nextLevelCost) {
+          advanceLevelButton.textContent = `⬆️ Advance to Level ${currentLevel + 1} (${nextLevelCost} Moon Rocks)`;
+        } else if (advanceLevelButton) {
+          advanceLevelButton.style.display = 'none';
+        }
+      }
+      break;
+      
+    case 'GameWon':
+      if (pullOrbButton) pullOrbButton.disabled = true;
+      if (gameOverActions) {
+        gameOverActions.style.display = 'block';
+        if (gameOverMessage) {
+          gameOverMessage.textContent = '🎉 Congratulations! You completed all 7 levels!';
+          gameOverMessage.className = 'text-center font-semibold mb-2 text-green-400';
+        }
+      }
+      break;
+      
+    case 'GameLost':
+      if (pullOrbButton) pullOrbButton.disabled = true;
+      if (gameOverActions) {
+        gameOverActions.style.display = 'block';
+        if (gameOverMessage) {
+          gameOverMessage.textContent = '💀 Game Over - Better luck next time!';
+          gameOverMessage.className = 'text-center font-semibold mb-2 text-red-400';
+        }
+      }
+      break;
+  }
+  
+  console.log('Game state UI updated from GraphQL:', gameState);
+}
+
+// Update active game display from GraphQL data
+function updateActiveGameDisplayFromGraphQL(gameNode) {
+  const hasActiveGame = gameNode.is_active;
+  
+  // Control spawn game button
+  const spawnGameButton = document.getElementById('spawn-game-button');
+  if (spawnGameButton) {
+    if (hasActiveGame) {
+      spawnGameButton.disabled = true;
+      spawnGameButton.textContent = 'Game In Progress';
+    } else {
+      spawnGameButton.disabled = false;
+      spawnGameButton.textContent = 'Spawn Game';
+    }
+  }
+  
+  // Control pull orb button
+  const pullOrbButton = document.getElementById('pull-orb-button');
+  if (pullOrbButton) {
+    if (hasActiveGame) {
+      pullOrbButton.style.display = 'block';
+      pullOrbButton.disabled = false;
+    } else {
+      pullOrbButton.style.display = 'none';
+    }
+  }
+  
+  console.log('Active game updated from GraphQL:', gameNode);
+}
+
+export { initGame, updateFromEntityData, fetchGameDataWithGraphQL, processGraphQLResponse };
