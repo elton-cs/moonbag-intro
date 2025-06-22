@@ -53,6 +53,17 @@ export class MainScreen extends Container {
   private startGameButton!: CustomButton;
   private giftRocksButton!: CustomButton;
 
+  // Resource labels (updateable)
+  private healthLabel!: Label;
+  private moonRocksLabel!: Label;
+  private cheddahLabel!: Label;
+  private pointsLabel!: Label;
+
+  // Game state labels
+  private gameStateLabel!: Label;
+  private levelLabel!: Label;
+  private orbBagLabel!: Label;
+
   // Settings UI (inline)
   private settingsContainer!: Container;
   private pauseButton!: CustomButton;
@@ -169,24 +180,44 @@ export class MainScreen extends Container {
     barBackground.stroke({ color: 0x8a4fff, width: 2 });
     this.resourceBar.addChild(barBackground);
 
-    // Evenly spaced resource display
-    const resources = [
-      { text: "❤️ 5", color: 0xff4a6a },
-      { text: "🌙 304", color: 0xffdd44 },
-      { text: "💰 0", color: 0x44ff88 },
-      { text: "⭐ 0", color: 0x8a4fff },
-    ];
-
-    const spacing = layout.RESOURCE_BAR.WIDTH / resources.length;
-    resources.forEach(({ text, color }, index) => {
-      const label = new Label({ 
-        text, 
-        style: { fill: color, fontSize: 14, fontWeight: "bold" } 
-      });
-      label.anchor.set(0.5); // Center the text
-      label.position.set(spacing * (index + 0.5), layout.RESOURCE_BAR.HEIGHT / 2);
-      this.resourceBar.addChild(label);
+    // Create updateable resource labels
+    const spacing = layout.RESOURCE_BAR.WIDTH / 4;
+    
+    // Health label
+    this.healthLabel = new Label({ 
+      text: "❤️ 5", 
+      style: { fill: 0xff4a6a, fontSize: 14, fontWeight: "bold" } 
     });
+    this.healthLabel.anchor.set(0.5);
+    this.healthLabel.position.set(spacing * 0.5, layout.RESOURCE_BAR.HEIGHT / 2);
+    this.resourceBar.addChild(this.healthLabel);
+
+    // Moon Rocks label
+    this.moonRocksLabel = new Label({ 
+      text: "🌙 0", 
+      style: { fill: 0xffdd44, fontSize: 14, fontWeight: "bold" } 
+    });
+    this.moonRocksLabel.anchor.set(0.5);
+    this.moonRocksLabel.position.set(spacing * 1.5, layout.RESOURCE_BAR.HEIGHT / 2);
+    this.resourceBar.addChild(this.moonRocksLabel);
+
+    // Cheddah label
+    this.cheddahLabel = new Label({ 
+      text: "💰 0", 
+      style: { fill: 0x44ff88, fontSize: 14, fontWeight: "bold" } 
+    });
+    this.cheddahLabel.anchor.set(0.5);
+    this.cheddahLabel.position.set(spacing * 2.5, layout.RESOURCE_BAR.HEIGHT / 2);
+    this.resourceBar.addChild(this.cheddahLabel);
+
+    // Points label
+    this.pointsLabel = new Label({ 
+      text: "⭐ 0", 
+      style: { fill: 0x8a4fff, fontSize: 14, fontWeight: "bold" } 
+    });
+    this.pointsLabel.anchor.set(0.5);
+    this.pointsLabel.position.set(spacing * 3.5, layout.RESOURCE_BAR.HEIGHT / 2);
+    this.resourceBar.addChild(this.pointsLabel);
   }
 
   private createGameArea(): void {
@@ -216,14 +247,32 @@ export class MainScreen extends Container {
     bag.position.set(centerX, centerY - 30);
     this.gameArea.addChild(bag);
 
-    // Bag label
-    const bagLabel = new Label({
-      text: "🎒 Moon Bag",
-      style: { fill: 0xc0c0d0, align: "center", fontSize: 18 },
+    // Bag label with game state
+    this.gameStateLabel = new Label({
+      text: "🎒 Moon Bag - Ready to Play",
+      style: { fill: 0xc0c0d0, align: "center", fontSize: 16 },
     });
-    bagLabel.anchor.set(0.5);
-    bagLabel.position.set(centerX, centerY + 80);
-    this.gameArea.addChild(bagLabel);
+    this.gameStateLabel.anchor.set(0.5);
+    this.gameStateLabel.position.set(centerX, centerY + 60);
+    this.gameArea.addChild(this.gameStateLabel);
+
+    // Level label
+    this.levelLabel = new Label({
+      text: "Level 1",
+      style: { fill: 0x8a4fff, align: "center", fontSize: 14, fontWeight: "bold" },
+    });
+    this.levelLabel.anchor.set(0.5);
+    this.levelLabel.position.set(centerX, centerY + 85);
+    this.gameArea.addChild(this.levelLabel);
+
+    // Orb bag contents label
+    this.orbBagLabel = new Label({
+      text: "No orbs yet",
+      style: { fill: 0x999999, align: "center", fontSize: 12 },
+    });
+    this.orbBagLabel.anchor.set(0.5);
+    this.orbBagLabel.position.set(centerX, centerY + 105);
+    this.gameArea.addChild(this.orbBagLabel);
   }
 
   private createControlPanel(): void {
@@ -546,10 +595,16 @@ export class MainScreen extends Container {
       const activeGame = await this.gameDataService.getPlayerActiveGame(playerAddress);
       const gameHistory = await this.gameDataService.getPlayerGameHistory(playerAddress);
       const gameCounter = await this.gameDataService.getPlayerGameCounter(playerAddress);
+      const orbBagSlots = await this.gameDataService.getPlayerOrbBagSlots(playerAddress);
 
       // Fetch combined data
       console.log("📊 ==> FETCHING COMBINED DATA <==");
       const allData = await this.gameDataService.getMoonBagData(playerAddress);
+      
+      // Update UI with fetched data
+      if (allData) {
+        this.updateUIWithMoonBagData(allData);
+      }
 
       // Also fetch global data for debugging
       console.log("📊 ==> FETCHING GLOBAL DATA (ALL PLAYERS) <==");
@@ -580,6 +635,116 @@ export class MainScreen extends Container {
     }
   }
 
+  /** Update UI with Moon Bag data */
+  private updateUIWithMoonBagData(data: MoonBagData): void {
+    console.log("🎨 Updating UI with Moon Bag data:", data);
+
+    // Update resource bar
+    if (data.moonRocks) {
+      this.moonRocksLabel.text = `🌙 ${data.moonRocks.amount}`;
+    }
+
+    // Find active game
+    const activeGame = data.games.find(game => game.is_active) || data.games[0];
+    
+    if (activeGame) {
+      // Update resource displays
+      this.healthLabel.text = `❤️ ${activeGame.health}`;
+      this.cheddahLabel.text = `💰 ${activeGame.cheddah}`;
+      this.pointsLabel.text = `⭐ ${activeGame.points}`;
+
+      // Update level display
+      this.levelLabel.text = `Level ${activeGame.current_level}`;
+
+      // Update game state
+      let gameStateText = "🎒 Moon Bag";
+      switch (activeGame.game_state) {
+        case "Active":
+          gameStateText = "🎮 Game Active";
+          break;
+        case "LevelComplete":
+          gameStateText = "🎉 Level Complete!";
+          break;
+        case "GameWon":
+          gameStateText = "🏆 Game Won!";
+          break;
+        case "GameLost":
+          gameStateText = "💀 Game Over";
+          break;
+      }
+      this.gameStateLabel.text = gameStateText;
+
+      // Update button states based on game state
+      this.updateControlsForGameState(activeGame.game_state, activeGame.is_active);
+    } else {
+      // No active game
+      this.healthLabel.text = "❤️ --";
+      this.cheddahLabel.text = "💰 --";
+      this.pointsLabel.text = "⭐ --";
+      this.levelLabel.text = "No Game";
+      this.gameStateLabel.text = "🎒 Moon Bag - Ready to Play";
+      this.updateControlsForGameState("", false);
+    }
+
+    // Update orb bag display
+    if (data.orbBagSlots && data.orbBagSlots.length > 0) {
+      const orbCounts: Record<string, number> = {};
+      data.orbBagSlots
+        .filter(slot => slot.is_active)
+        .forEach(slot => {
+          orbCounts[slot.orb_type] = (orbCounts[slot.orb_type] || 0) + 1;
+        });
+
+      const orbTexts = Object.entries(orbCounts).map(([type, count]) => {
+        const emoji = this.getOrbEmoji(type);
+        return `${emoji}${count}`;
+      });
+
+      this.orbBagLabel.text = orbTexts.length > 0 ? orbTexts.join(" ") : "Empty bag";
+    } else {
+      this.orbBagLabel.text = "No orbs yet";
+    }
+  }
+
+  /** Get emoji for orb type */
+  private getOrbEmoji(orbType: string): string {
+    switch (orbType) {
+      case "Health": return "❤️";
+      case "FivePoints": return "⭐";
+      case "SingleBomb": return "💣";
+      default: return "🔮";
+    }
+  }
+
+  /** Update control states based on game state */
+  private updateControlsForGameState(gameState: string, hasActiveGame: boolean): void {
+    if (!hasActiveGame) {
+      this.startGameButton.enabled = true;
+      this.startGameButton.text = "🎮 START";
+      return;
+    }
+
+    switch (gameState) {
+      case "Active":
+        this.startGameButton.enabled = false;
+        this.startGameButton.text = "🎮 IN GAME";
+        break;
+      case "LevelComplete":
+        this.startGameButton.enabled = true;
+        this.startGameButton.text = "⬆️ NEXT LEVEL";
+        break;
+      case "GameWon":
+      case "GameLost":
+        this.startGameButton.enabled = true;
+        this.startGameButton.text = "🏁 END GAME";
+        break;
+      default:
+        this.startGameButton.enabled = true;
+        this.startGameButton.text = "🎮 START";
+        break;
+    }
+  }
+
   /** Setup real-time subscription to Moon Bag data changes */
   private setupMoonBagDataSubscription(playerAddress: string): void {
     // Clear existing subscription
@@ -593,7 +758,7 @@ export class MainScreen extends Container {
       playerAddress,
       (data: MoonBagData) => {
         console.log("🔔 Real-time Moon Bag data update:", data);
-        // TODO: Update UI with new data
+        this.updateUIWithMoonBagData(data);
       }
     );
   }

@@ -60,6 +60,23 @@ export const GET_GAME_COUNTER_MODELS = gql`
   }
 `;
 
+// Query for orb bag slot data
+export const GET_ORB_BAG_SLOT_MODELS = gql`
+  query GetOrbBagSlotModels($player: String) {
+    diOrbBagSlotModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          slot_index
+          orb_type
+          is_active
+        }
+      }
+    }
+  }
+`;
+
 // Combined query for fetching all Moon Bag data in one request
 export const GET_ALL_MOON_BAG_DATA = gql`
   query GetAllMoonBagData($player: String) {
@@ -75,6 +92,8 @@ export const GET_ALL_MOON_BAG_DATA = gql`
           current_level
           is_active
           game_state
+          orb_bag_size
+          orbs_drawn_count
         }
       }
     }
@@ -102,6 +121,17 @@ export const GET_ALL_MOON_BAG_DATA = gql`
         }
       }
     }
+    diOrbBagSlotModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          slot_index
+          orb_type
+          is_active
+        }
+      }
+    }
   }
 `;
 
@@ -120,6 +150,8 @@ export const GET_ALL_MOON_BAG_DATA_GLOBAL = gql`
           current_level
           is_active
           game_state
+          orb_bag_size
+          orbs_drawn_count
         }
       }
     }
@@ -144,6 +176,17 @@ export const GET_ALL_MOON_BAG_DATA_GLOBAL = gql`
         node {
           player
           next_game_id
+        }
+      }
+    }
+    diOrbBagSlotModels {
+      edges {
+        node {
+          player
+          game_id
+          slot_index
+          orb_type
+          is_active
         }
       }
     }
@@ -173,6 +216,8 @@ export const SUBSCRIBE_MOON_BAG_PLAYER_UPDATES = gql`
           current_level
           is_active
           game_state
+          orb_bag_size
+          orbs_drawn_count
         }
       }
     }
@@ -189,6 +234,17 @@ export const SUBSCRIBE_MOON_BAG_PLAYER_UPDATES = gql`
         node {
           player
           next_game_id
+        }
+      }
+    }
+    diOrbBagSlotModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          slot_index
+          orb_type
+          is_active
         }
       }
     }
@@ -223,6 +279,24 @@ export const SUBSCRIBE_GAME_UPDATES = gql`
           current_level
           is_active
           game_state
+          orb_bag_size
+          orbs_drawn_count
+        }
+      }
+    }
+  }
+`;
+
+export const SUBSCRIBE_ORB_BAG_UPDATES = gql`
+  subscription SubscribeOrbBagUpdates($player: String!) {
+    diOrbBagSlotModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          slot_index
+          orb_type
+          is_active
         }
       }
     }

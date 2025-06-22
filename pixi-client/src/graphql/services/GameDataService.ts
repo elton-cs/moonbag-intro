@@ -10,12 +10,14 @@ import {
   GET_MOON_ROCKS_MODELS,
   GET_ACTIVE_GAME_MODELS,
   GET_GAME_COUNTER_MODELS,
+  GET_ORB_BAG_SLOT_MODELS,
   GET_ALL_MOON_BAG_DATA,
   GET_ALL_MOON_BAG_DATA_GLOBAL,
   SUBSCRIBE_MOON_BAG_UPDATES,
   SUBSCRIBE_MOON_BAG_PLAYER_UPDATES,
   SUBSCRIBE_MOON_ROCKS_UPDATES,
   SUBSCRIBE_GAME_UPDATES,
+  SUBSCRIBE_ORB_BAG_UPDATES,
   SUBSCRIBE_ACTIVE_GAME_UPDATES,
 } from "../queries/moonbag";
 import type {
@@ -28,11 +30,13 @@ import type {
   MoonRocksModel,
   ActiveGameModel,
   GameCounterModel,
+  OrbBagSlotModel,
   GetMoonBagDataResult,
   GetGameModelsResult,
   GetMoonRocksModelsResult,
   GetActiveGameModelsResult,
   GetGameCounterModelsResult,
+  GetOrbBagSlotModelsResult,
 } from "../types";
 
 export class GameDataService {
@@ -346,6 +350,29 @@ export class GameDataService {
   }
 
   /**
+   * Get player's orb bag slots
+   */
+  async getPlayerOrbBagSlots(playerAddress: string): Promise<OrbBagSlotModel[]> {
+    try {
+      const result = await apolloClient.query({
+        query: GET_ORB_BAG_SLOT_MODELS,
+        variables: { player: playerAddress },
+        fetchPolicy: "cache-first",
+      });
+
+      console.log("🎒 Orb Bag Slots Data (Raw):", result.data);
+
+      const orbBagSlots = result.data.diOrbBagSlotModels?.edges?.map((edge: any) => edge.node) || [];
+      console.log("🎒 Orb Bag Slots Data (Parsed):", orbBagSlots);
+
+      return orbBagSlots;
+    } catch (error) {
+      console.error("Error fetching orb bag slots:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Watch Moon Bag data changes with real-time WebSocket updates
    */
   watchMoonBagData(
@@ -540,12 +567,14 @@ export class GameDataService {
     const moonRocks = data.diMoonRocksModels?.edges[0]?.node;
     const activeGame = data.diActiveGameModels?.edges[0]?.node;
     const gameCounter = data.diGameCounterModels?.edges[0]?.node;
+    const orbBagSlots = data.diOrbBagSlotModels?.edges?.map((edge) => edge.node) || [];
 
     return {
       games,
       moonRocks,
       activeGame,
       gameCounter,
+      orbBagSlots,
     };
   }
 

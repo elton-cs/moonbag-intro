@@ -79,6 +79,14 @@ export interface GameCounterModel {
   next_game_id: number;
 }
 
+export interface OrbBagSlotModel {
+  player: string;
+  game_id: number;
+  slot_index: number;
+  orb_type: string;
+  is_active: boolean;
+}
+
 // GraphQL Entity Types (with __typename and id)
 export interface GameEntity extends GameModel {
   __typename: "GameModel";
@@ -100,12 +108,18 @@ export interface GameCounterEntity extends GameCounterModel {
   id: string;
 }
 
+export interface OrbBagSlotEntity extends OrbBagSlotModel {
+  __typename: "OrbBagSlotModel";
+  id: string;
+}
+
 // Combined data result types
 export interface MoonBagData {
   games: GameModel[];
   moonRocks?: MoonRocksModel;
   activeGame?: ActiveGameModel;
   gameCounter?: GameCounterModel;
+  orbBagSlots?: OrbBagSlotModel[];
 }
 
 export interface GetMoonBagDataResult {
@@ -120,6 +134,9 @@ export interface GetMoonBagDataResult {
   };
   diGameCounterModels?: {
     edges: Array<{ node: GameCounterEntity }>;
+  };
+  diOrbBagSlotModels?: {
+    edges: Array<{ node: OrbBagSlotEntity }>;
   };
 }
 
@@ -145,5 +162,11 @@ export interface GetActiveGameModelsResult {
 export interface GetGameCounterModelsResult {
   diGameCounterModels?: {
     edges: Array<{ node: GameCounterEntity }>;
+  };
+}
+
+export interface GetOrbBagSlotModelsResult {
+  diOrbBagSlotModels?: {
+    edges: Array<{ node: OrbBagSlotEntity }>;
   };
 }
