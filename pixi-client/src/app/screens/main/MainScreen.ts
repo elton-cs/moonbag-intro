@@ -8,6 +8,8 @@ import { CustomButton } from "../../ui/CustomButton";
 import { Label } from "../../ui/Label";
 import type { WalletConnectionState } from "../../../wallet";
 import { ConnectionStatus } from "../../../wallet";
+import { GameDataService } from "../../../graphql/services/GameDataService";
+import type { MoonBagData } from "../../../graphql/types";
 
 /** The screen that holds the app */
 export class MainScreen extends Container {
@@ -60,11 +62,14 @@ export class MainScreen extends Container {
 
   private paused = false;
   private walletUnsubscribe?: () => void;
+  private gameDataService: GameDataService;
+  private moonBagDataUnsubscribe?: () => void;
 
 
   constructor() {
     super();
 
+    this.gameDataService = new GameDataService();
     this.createBackground();
     this.createContainers();
     this.createUI();
@@ -444,6 +449,12 @@ export class MainScreen extends Container {
     if (this.walletUnsubscribe) {
       this.walletUnsubscribe();
     }
+    
+    // Clean up Moon Bag data subscription
+    this.clearMoonBagDataSubscription();
+    
+    // Clear all GraphQL subscriptions
+    this.gameDataService.clearSubscriptions();
   }
 
   /** Handle wallet connection button press */
@@ -461,6 +472,9 @@ export class MainScreen extends Container {
       console.log("Starting new Moon Bag game...");
       await engine().wallet.spawnGame();
       console.log("Game started successfully!");
+      
+      // Refresh blockchain data after successful transaction
+      await this.refreshMoonBagData();
     } catch (error) {
       console.error("Failed to start game:", error);
     }
@@ -492,6 +506,9 @@ export class MainScreen extends Container {
       console.log("Moon rocks gift successful!", result);
       this.giftRocksButton.text = "✅ GIFTED!";
       
+      // Refresh blockchain data after successful transaction
+      await this.refreshMoonBagData();
+      
       // Keep button disabled after successful gift
       setTimeout(() => {
         this.giftRocksButton.text = "🎁 GIFT USED";
@@ -511,6 +528,85 @@ export class MainScreen extends Container {
     }
   }
 
+  /** Fetch and log all Moon Bag data for connected player */
+  private async fetchMoonBagData(): Promise<void> {
+    try {
+      const playerAddress = engine().wallet.getState().address;
+      if (!playerAddress) {
+        console.log("🚫 No player address available");
+        return;
+      }
+
+      console.log("🔍 Fetching Moon Bag data for player:", playerAddress);
+
+      // Fetch all data types individually for detailed logging
+      console.log("📊 ==> FETCHING INDIVIDUAL DATA TYPES <==");
+      
+      const moonRocks = await this.gameDataService.getPlayerMoonRocks(playerAddress);
+      const activeGame = await this.gameDataService.getPlayerActiveGame(playerAddress);
+      const gameHistory = await this.gameDataService.getPlayerGameHistory(playerAddress);
+      const gameCounter = await this.gameDataService.getPlayerGameCounter(playerAddress);
+
+      // Fetch combined data
+      console.log("📊 ==> FETCHING COMBINED DATA <==");
+      const allData = await this.gameDataService.getMoonBagData(playerAddress);
+
+      // Also fetch global data for debugging
+      console.log("📊 ==> FETCHING GLOBAL DATA (ALL PLAYERS) <==");
+      const globalData = await this.gameDataService.getAllMoonBagDataGlobal();
+
+      console.log("✅ Moon Bag data fetch complete!");
+
+    } catch (error) {
+      console.error("❌ Error fetching Moon Bag data:", error);
+    }
+  }
+
+  /** Refresh Moon Bag data with fresh network fetch */
+  private async refreshMoonBagData(): Promise<void> {
+    try {
+      const playerAddress = engine().wallet.getState().address;
+      if (!playerAddress) {
+        console.log("🚫 No player address available for refresh");
+        return;
+      }
+
+      console.log("🔄 Refreshing Moon Bag data...");
+      await this.gameDataService.refetchMoonBagData(playerAddress);
+      console.log("✅ Moon Bag data refreshed!");
+
+    } catch (error) {
+      console.error("❌ Error refreshing Moon Bag data:", error);
+    }
+  }
+
+  /** Setup real-time subscription to Moon Bag data changes */
+  private setupMoonBagDataSubscription(playerAddress: string): void {
+    // Clear existing subscription
+    if (this.moonBagDataUnsubscribe) {
+      this.moonBagDataUnsubscribe();
+    }
+
+    console.log("🔔 Setting up real-time Moon Bag data subscription for:", playerAddress);
+
+    this.moonBagDataUnsubscribe = this.gameDataService.watchMoonBagData(
+      playerAddress,
+      (data: MoonBagData) => {
+        console.log("🔔 Real-time Moon Bag data update:", data);
+        // TODO: Update UI with new data
+      }
+    );
+  }
+
+  /** Clear Moon Bag data subscription */
+  private clearMoonBagDataSubscription(): void {
+    if (this.moonBagDataUnsubscribe) {
+      console.log("🔕 Clearing Moon Bag data subscription");
+      this.moonBagDataUnsubscribe();
+      this.moonBagDataUnsubscribe = undefined;
+    }
+  }
+
   /** Handle wallet state changes and update UI accordingly */
   private onWalletStateChange(state: WalletConnectionState): void {
     switch (state.status) {
@@ -520,6 +616,7 @@ export class MainScreen extends Container {
         this.usernameLabel.visible = false;
         this.startGameButton.enabled = false;
         this.giftRocksButton.enabled = false;
+        this.clearMoonBagDataSubscription();
         break;
 
       case ConnectionStatus.Connecting:
@@ -544,6 +641,12 @@ export class MainScreen extends Container {
 
         console.log("Wallet connected successfully:", state.address);
         console.log("User display name:", displayName);
+
+        // Fetch Moon Bag data when wallet connects
+        if (state.address) {
+          this.fetchMoonBagData();
+          this.setupMoonBagDataSubscription(state.address);
+        }
         break;
       }
 
