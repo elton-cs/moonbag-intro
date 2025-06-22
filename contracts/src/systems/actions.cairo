@@ -118,15 +118,11 @@ pub mod actions {
         }
     }
 
-    // Calculate points with multiplier (always rounds up)
+    // Calculate points with multiplier (always rounds down)
     fn calculate_points_with_multiplier(base_points: u32, multiplier: u32) -> u32 {
         let result = base_points * multiplier;
-        // If there's a remainder when dividing by 100, round up
-        if result % 100 == 0 {
-            result / 100
-        } else {
-            (result / 100).saturating_add(1)
-        }
+        // Always round down by truncating the decimal portion
+        result / 100
     }
 
     // Apply multiplier to a value, supporting fractional multipliers
@@ -348,13 +344,13 @@ pub mod actions {
                 
                 // Multiplier orbs
                 OrbType::DoubleMultiplier => {
-                    game.multiplier = game.multiplier.saturating_add(100); // +1.0x (200 total = 2.0x)
+                    game.multiplier = game.multiplier.saturating_add(200); // +2.0x
                 },
                 OrbType::HalfMultiplier => {
-                    game.multiplier = game.multiplier / 2; // ×0.5
+                    game.multiplier = game.multiplier.saturating_add(50); // +0.5x
                 },
                 OrbType::Multiplier1_5x => {
-                    game.multiplier = (game.multiplier * 150) / 100; // ×1.5
+                    game.multiplier = game.multiplier.saturating_add(150); // +1.5x
                 },
                 OrbType::NextPoints2x => {
                     // Activate temporary 2x multiplier for next points orb only
