@@ -8,6 +8,7 @@ import { engine } from "../../getEngine";
 import { PausePopup } from "../../popups/PausePopup";
 import { SettingsPopup } from "../../popups/SettingsPopup";
 import { Button } from "../../ui/Button";
+import { Label } from "../../ui/Label";
 import type { WalletConnectionState } from "../../../wallet";
 import { ConnectionStatus } from "../../../wallet";
 
@@ -24,6 +25,7 @@ export class MainScreen extends Container {
   private addButton: FancyButton;
   private removeButton: FancyButton;
   private connectButton: Button;
+  private usernameLabel: Label;
   private bouncer: Bouncer;
   private paused = false;
   private walletUnsubscribe?: () => void;
@@ -85,14 +87,27 @@ export class MainScreen extends Container {
     this.removeButton.onPress.connect(() => this.bouncer.remove());
     this.addChild(this.removeButton);
 
-    // Create connect wallet button
+    // Create connect wallet button (use default size for proper text fit)
     this.connectButton = new Button({
       text: "Connect Wallet",
-      width: 200,
-      height: 110,
+      width: 301, // Use default button width for better text accommodation
+      height: 112, // Use default button height
     });
     this.connectButton.onPress.connect(() => this.handleConnectWallet());
     this.addChild(this.connectButton);
+
+    // Create username display label (initially hidden)
+    this.usernameLabel = new Label({
+      text: "",
+      style: {
+        fill: 0xffffff,
+        align: "center",
+        fontSize: 18,
+      },
+    });
+    this.usernameLabel.anchor.set(0.5);
+    this.usernameLabel.visible = false;
+    this.addChild(this.usernameLabel);
 
     // Subscribe to wallet state changes
     this.walletUnsubscribe = engine().wallet.onConnectionChange((state) =>
@@ -137,13 +152,17 @@ export class MainScreen extends Container {
     this.settingsButton.x = width - 30;
     this.settingsButton.y = 30;
 
-    // Position buttons in a row at the bottom
-    this.connectButton.x = width / 2 - 200;
+    // Position buttons in a row at the bottom (adjusted for larger connect button)
+    this.connectButton.x = width / 2 - 250; // Moved further left for larger button
     this.connectButton.y = height - 75;
-    this.removeButton.x = width / 2 - 25;
+    this.removeButton.x = width / 2 + 50; // Moved right to accommodate larger connect button
     this.removeButton.y = height - 75;
-    this.addButton.x = width / 2 + 150;
+    this.addButton.x = width / 2 + 200; // Moved further right
     this.addButton.y = height - 75;
+
+    // Position username label below connect button
+    this.usernameLabel.x = this.connectButton.x;
+    this.usernameLabel.y = this.connectButton.y + 70; // 70px below button
 
     this.bouncer.resize(width, height);
   }
@@ -158,6 +177,7 @@ export class MainScreen extends Container {
       this.addButton,
       this.removeButton,
       this.connectButton,
+      this.usernameLabel,
     ];
 
     let finalPromise!: AnimationPlaybackControls;
@@ -204,22 +224,35 @@ export class MainScreen extends Container {
       case ConnectionStatus.Disconnected:
         this.connectButton.text = "Connect Wallet";
         this.connectButton.enabled = true;
+        this.usernameLabel.visible = false;
         break;
 
       case ConnectionStatus.Connecting:
         this.connectButton.text = "Connecting...";
         this.connectButton.enabled = false;
+        this.usernameLabel.visible = false;
         break;
 
-      case ConnectionStatus.Connected:
+      case ConnectionStatus.Connected: {
         this.connectButton.text = "Connected";
         this.connectButton.enabled = false;
+
+        // Show username or address
+        const displayName = engine().wallet.getUserDisplayName();
+        if (displayName) {
+          this.usernameLabel.text = `User: ${displayName}`;
+          this.usernameLabel.visible = true;
+        }
+
         console.log("Wallet connected successfully:", state.address);
+        console.log("User display name:", displayName);
         break;
+      }
 
       case ConnectionStatus.Error:
         this.connectButton.text = "Connection Failed";
         this.connectButton.enabled = true;
+        this.usernameLabel.visible = false;
         console.error("Wallet connection error:", state.error);
         break;
     }

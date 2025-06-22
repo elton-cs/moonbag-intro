@@ -44,6 +44,29 @@ export class WalletService {
   }
 
   /**
+   * Get user identification string (username or shortened address)
+   */
+  public getUserDisplayName(): string | undefined {
+    if (!this.state.account) return undefined;
+
+    const account = this.state.account as unknown as Record<string, unknown>;
+
+    // Try to get username/name first
+    const username =
+      account.username || account.name || account.displayName || account.id;
+    if (username && typeof username === "string") {
+      return username;
+    }
+
+    // Fallback to shortened address
+    if (account.address && typeof account.address === "string") {
+      return `${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
+    }
+
+    return undefined;
+  }
+
+  /**
    * Subscribe to connection state changes
    */
   public onConnectionChange(
@@ -68,6 +91,28 @@ export class WalletService {
 
     try {
       const account = await this.controller.connect();
+
+      // Debug: Log all available properties on the account object
+      console.log("Connected account object:", account);
+      console.log("Account properties:", Object.keys(account || {}));
+      console.log("Account address:", account?.address);
+
+      // Check for common username/identity properties
+      const possibleUsernameFields = [
+        "username",
+        "name",
+        "displayName",
+        "id",
+        "userId",
+      ];
+      possibleUsernameFields.forEach((field) => {
+        if ((account as unknown as Record<string, unknown>)?.[field]) {
+          console.log(
+            `Found ${field}:`,
+            (account as unknown as Record<string, unknown>)[field],
+          );
+        }
+      });
 
       this.updateState({
         status: ConnectionStatus.Connected,
