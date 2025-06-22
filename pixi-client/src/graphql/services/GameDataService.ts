@@ -5,11 +5,13 @@ import {
   GET_ACTIVE_GAME_MODELS,
   GET_GAME_COUNTER_MODELS,
   GET_ORB_BAG_SLOT_MODELS,
+  GET_DRAWN_ORB_MODELS,
   GET_ALL_MOON_BAG_DATA,
   GET_ALL_MOON_BAG_DATA_GLOBAL,
   SUBSCRIBE_MOON_BAG_PLAYER_UPDATES,
   SUBSCRIBE_MOON_ROCKS_UPDATES,
   SUBSCRIBE_GAME_UPDATES,
+  SUBSCRIBE_DRAWN_ORB_UPDATES,
 } from "../queries/moonbag";
 import type {
   MoonBagData,
@@ -18,11 +20,13 @@ import type {
   ActiveGameModel,
   GameCounterModel,
   OrbBagSlotModel,
+  DrawnOrbModel,
   GetMoonBagDataResult,
   GameEntity,
   MoonRocksEntity,
   ActiveGameEntity,
   GameCounterEntity,
+  DrawnOrbEntity,
 } from "../types";
 
 export class GameDataService {
@@ -265,6 +269,32 @@ export class GameDataService {
       return orbBagSlots;
     } catch (error) {
       console.error("Error fetching orb bag slots:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get player's drawn orbs
+   */
+  async getPlayerDrawnOrbs(playerAddress: string): Promise<DrawnOrbModel[]> {
+    try {
+      const result = await apolloClient.query({
+        query: GET_DRAWN_ORB_MODELS,
+        variables: { player: playerAddress },
+        fetchPolicy: "cache-first",
+      });
+
+      console.log("🎯 Drawn Orbs Data (Raw):", result.data);
+
+      const drawnOrbs =
+        result.data.diDrawnOrbModels?.edges?.map(
+          (edge: { node: DrawnOrbModel }) => edge.node,
+        ) || [];
+      console.log("🎯 Drawn Orbs Data (Parsed):", drawnOrbs);
+
+      return drawnOrbs;
+    } catch (error) {
+      console.error("Error fetching drawn orbs:", error);
       throw error;
     }
   }
@@ -566,6 +596,8 @@ export class GameDataService {
     const gameCounter = data.diGameCounterModels?.edges[0]?.node;
     const orbBagSlots =
       data.diOrbBagSlotModels?.edges?.map((edge) => edge.node) || [];
+    const drawnOrbs =
+      data.diDrawnOrbModels?.edges?.map((edge) => edge.node) || [];
 
     return {
       games,
@@ -573,7 +605,57 @@ export class GameDataService {
       activeGame,
       gameCounter,
       orbBagSlots,
+      drawnOrbs,
     };
+  }
+
+  /**
+   * Subscribe to drawn orb updates only
+   */
+  subscribeDrawnOrbUpdates(
+    playerAddress: string,
+    callback: (drawnOrbs: DrawnOrbModel[]) => void,
+    subscriptionId: string = "drawn-orbs",
+  ): () => void {
+    try {
+      console.log(
+        `🔔 Setting up Drawn Orb WebSocket subscription for player: ${playerAddress}`,
+      );
+
+      const subscription = apolloClient
+        .subscribe({
+          query: SUBSCRIBE_DRAWN_ORB_UPDATES,
+          variables: { player: playerAddress },
+        })
+        .subscribe({
+          next: (result) => {
+            if (result.data?.diDrawnOrbModels) {
+              const drawnOrbs =
+                result.data.diDrawnOrbModels?.edges?.map(
+                  (edge: { node: DrawnOrbEntity }) => edge.node,
+                ) || [];
+              console.log("🔔 REAL-TIME UPDATE - Drawn Orbs Only:", drawnOrbs);
+              callback(drawnOrbs);
+            }
+          },
+          error: (error) => {
+            console.error("🔔 Drawn Orb subscription error:", error);
+          },
+        });
+
+      this.subscriptions.set(subscriptionId, subscription);
+
+      return () => {
+        console.log(
+          `🔕 Unsubscribing from Drawn Orb updates: ${subscriptionId}`,
+        );
+        subscription.unsubscribe();
+        this.subscriptions.delete(subscriptionId);
+      };
+    } catch (error) {
+      console.error("Error setting up Drawn Orb subscription:", error);
+      throw error;
+    }
   }
 
   /**

@@ -77,6 +77,22 @@ export const GET_ORB_BAG_SLOT_MODELS = gql`
   }
 `;
 
+// Query for drawn orb data
+export const GET_DRAWN_ORB_MODELS = gql`
+  query GetDrawnOrbModels($player: String) {
+    diDrawnOrbModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          draw_index
+          orb_type
+        }
+      }
+    }
+  }
+`;
+
 // Combined query for fetching all Moon Bag data in one request
 export const GET_ALL_MOON_BAG_DATA = gql`
   query GetAllMoonBagData($player: String) {
@@ -129,6 +145,16 @@ export const GET_ALL_MOON_BAG_DATA = gql`
           slot_index
           orb_type
           is_active
+        }
+      }
+    }
+    diDrawnOrbModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          draw_index
+          orb_type
         }
       }
     }
@@ -190,6 +216,16 @@ export const GET_ALL_MOON_BAG_DATA_GLOBAL = gql`
         }
       }
     }
+    diDrawnOrbModels {
+      edges {
+        node {
+          player
+          game_id
+          draw_index
+          orb_type
+        }
+      }
+    }
   }
 `;
 
@@ -245,6 +281,16 @@ export const SUBSCRIBE_MOON_BAG_PLAYER_UPDATES = gql`
           slot_index
           orb_type
           is_active
+        }
+      }
+    }
+    diDrawnOrbModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          draw_index
+          orb_type
         }
       }
     }
@@ -310,6 +356,21 @@ export const SUBSCRIBE_ACTIVE_GAME_UPDATES = gql`
         node {
           player
           game_id
+        }
+      }
+    }
+  }
+`;
+
+export const SUBSCRIBE_DRAWN_ORB_UPDATES = gql`
+  subscription SubscribeDrawnOrbUpdates($player: String!) {
+    diDrawnOrbModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          draw_index
+          orb_type
         }
       }
     }

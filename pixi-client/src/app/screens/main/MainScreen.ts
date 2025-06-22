@@ -6,6 +6,7 @@ import { Container, Graphics } from "pixi.js";
 import { engine } from "../../getEngine";
 import { CustomButton } from "../../ui/CustomButton";
 import { Label } from "../../ui/Label";
+import { OrbsDrawnList } from "../../ui/OrbsDrawnList";
 import type { WalletConnectionState } from "../../../wallet";
 import { ConnectionStatus } from "../../../wallet";
 import { GameDataService } from "../../../graphql/services/GameDataService";
@@ -20,19 +21,29 @@ export class MainScreen extends Container {
   private static readonly LAYOUT = {
     PADDING: 15,
     MARGIN: 25,
-    PANEL_SPACING: 20,
+    PANEL_SPACING: 15, // Reduced spacing between rows
     RESOURCE_BAR: {
       WIDTH: 500,
       HEIGHT: 50,
       BORDER_RADIUS: 8,
     },
-    GAME_AREA: {
+    GAME_STATUS: {
       WIDTH: 500,
-      HEIGHT: 300,
+      HEIGHT: 200, // Reduced height for game status area
       BORDER_RADIUS: 15,
     },
-    CONTROL_PANEL: {
+    ORB_INFO_ROW: {
       WIDTH: 500,
+      HEIGHT: 60, // New row for orb bag contents
+      BORDER_RADIUS: 8,
+    },
+    DRAWN_ORBS_ROW: {
+      WIDTH: 500,
+      HEIGHT: 160, // New row for drawn orbs list
+      BORDER_RADIUS: 8,
+    },
+    CONTROL_PANEL: {
+      WIDTH: 500, // Back to original width
       HEIGHT: 80,
       BORDER_RADIUS: 8,
     },
@@ -48,7 +59,9 @@ export class MainScreen extends Container {
 
   // Game UI
   private resourceBar!: Container;
-  private gameArea!: Container;
+  private gameStatusArea!: Container;
+  private orbInfoRow!: Container;
+  private drawnOrbsRow!: Container;
   private controlPanel!: Container;
   private startGameButton!: CustomButton;
   private pullOrbButton!: CustomButton;
@@ -66,6 +79,7 @@ export class MainScreen extends Container {
   private gameStateLabel!: Label;
   private levelLabel!: Label;
   private orbBagLabel!: Label;
+  private orbsDrawnList!: OrbsDrawnList;
 
   // Settings UI (inline)
   private settingsContainer!: Container;
@@ -102,14 +116,18 @@ export class MainScreen extends Container {
     this.mainContainer = new Container();
     this.addChild(this.mainContainer);
 
-    // UI sub-containers - all visible simultaneously
+    // UI sub-containers - all visible simultaneously in rows
     this.resourceBar = new Container();
-    this.gameArea = new Container();
+    this.gameStatusArea = new Container();
+    this.orbInfoRow = new Container();
+    this.drawnOrbsRow = new Container();
     this.controlPanel = new Container();
     this.settingsContainer = new Container();
 
     this.mainContainer.addChild(this.resourceBar);
-    this.mainContainer.addChild(this.gameArea);
+    this.mainContainer.addChild(this.gameStatusArea);
+    this.mainContainer.addChild(this.orbInfoRow);
+    this.mainContainer.addChild(this.drawnOrbsRow);
     this.mainContainer.addChild(this.controlPanel);
     this.mainContainer.addChild(this.settingsContainer);
   }
@@ -118,7 +136,9 @@ export class MainScreen extends Container {
     this.createTitle();
     this.createConnectionSection();
     this.createResourceBar();
-    this.createGameArea();
+    this.createGameStatusArea();
+    this.createOrbInfoRow();
+    this.createDrawnOrbsRow();
     this.createControlPanel();
     this.createSettingsSection();
   }
@@ -234,32 +254,32 @@ export class MainScreen extends Container {
     this.resourceBar.addChild(this.pointsLabel);
   }
 
-  private createGameArea(): void {
+  private createGameStatusArea(): void {
     const layout = MainScreen.LAYOUT;
 
-    // Game area background
+    // Game status area background
     const gameBackground = new Graphics();
     gameBackground.roundRect(
       0,
       0,
-      layout.GAME_AREA.WIDTH,
-      layout.GAME_AREA.HEIGHT,
-      layout.GAME_AREA.BORDER_RADIUS,
+      layout.GAME_STATUS.WIDTH,
+      layout.GAME_STATUS.HEIGHT,
+      layout.GAME_STATUS.BORDER_RADIUS,
     );
     gameBackground.fill(0x1a1a2a);
     gameBackground.stroke({ color: 0x8a4fff, width: 2 });
-    this.gameArea.addChild(gameBackground);
+    this.gameStatusArea.addChild(gameBackground);
 
-    const centerX = layout.GAME_AREA.WIDTH / 2;
-    const centerY = layout.GAME_AREA.HEIGHT / 2;
+    const centerX = layout.GAME_STATUS.WIDTH / 2;
+    const centerY = layout.GAME_STATUS.HEIGHT / 2;
 
     // Moon bag representation
     const bag = new Graphics();
-    bag.circle(0, 0, 80);
+    bag.circle(0, 0, 60); // Smaller bag to fit reduced height
     bag.fill(0x2a2a3a);
     bag.stroke({ color: 0xc0c0d0, width: 3 });
-    bag.position.set(centerX, centerY - 30);
-    this.gameArea.addChild(bag);
+    bag.position.set(centerX, centerY - 20);
+    this.gameStatusArea.addChild(bag);
 
     // Bag label with game state
     this.gameStateLabel = new Label({
@@ -267,8 +287,8 @@ export class MainScreen extends Container {
       style: { fill: 0xc0c0d0, align: "center", fontSize: 16 },
     });
     this.gameStateLabel.anchor.set(0.5);
-    this.gameStateLabel.position.set(centerX, centerY + 60);
-    this.gameArea.addChild(this.gameStateLabel);
+    this.gameStateLabel.position.set(centerX, centerY + 50);
+    this.gameStatusArea.addChild(this.gameStateLabel);
 
     // Level label
     this.levelLabel = new Label({
@@ -281,17 +301,62 @@ export class MainScreen extends Container {
       },
     });
     this.levelLabel.anchor.set(0.5);
-    this.levelLabel.position.set(centerX, centerY + 85);
-    this.gameArea.addChild(this.levelLabel);
+    this.levelLabel.position.set(centerX, centerY + 75);
+    this.gameStatusArea.addChild(this.levelLabel);
+  }
+
+  private createOrbInfoRow(): void {
+    const layout = MainScreen.LAYOUT;
+
+    // Orb info row background
+    const orbBackground = new Graphics();
+    orbBackground.roundRect(
+      0,
+      0,
+      layout.ORB_INFO_ROW.WIDTH,
+      layout.ORB_INFO_ROW.HEIGHT,
+      layout.ORB_INFO_ROW.BORDER_RADIUS,
+    );
+    orbBackground.fill(0x1a1a2a);
+    orbBackground.stroke({ color: 0x8a4fff, width: 2 });
+    this.orbInfoRow.addChild(orbBackground);
+
+    const centerX = layout.ORB_INFO_ROW.WIDTH / 2;
+    const centerY = layout.ORB_INFO_ROW.HEIGHT / 2;
 
     // Orb bag contents label
     this.orbBagLabel = new Label({
       text: "No orbs yet",
-      style: { fill: 0x999999, align: "center", fontSize: 12 },
+      style: { fill: 0x999999, align: "center", fontSize: 14 },
     });
     this.orbBagLabel.anchor.set(0.5);
-    this.orbBagLabel.position.set(centerX, centerY + 105);
-    this.gameArea.addChild(this.orbBagLabel);
+    this.orbBagLabel.position.set(centerX, centerY);
+    this.orbInfoRow.addChild(this.orbBagLabel);
+  }
+
+  private createDrawnOrbsRow(): void {
+    const layout = MainScreen.LAYOUT;
+
+    // Create background for drawn orbs row
+    const drawnBackground = new Graphics();
+    drawnBackground.roundRect(
+      0,
+      0,
+      layout.DRAWN_ORBS_ROW.WIDTH,
+      layout.DRAWN_ORBS_ROW.HEIGHT,
+      layout.DRAWN_ORBS_ROW.BORDER_RADIUS,
+    );
+    drawnBackground.fill(0x1a1a2a);
+    drawnBackground.stroke({ color: 0x8a4fff, width: 2 });
+    this.drawnOrbsRow.addChild(drawnBackground);
+
+    // Orbs drawn list centered in the row
+    this.orbsDrawnList = new OrbsDrawnList({
+      width: layout.DRAWN_ORBS_ROW.WIDTH - 20, // 10px padding on each side
+      height: layout.DRAWN_ORBS_ROW.HEIGHT - 20, // 10px padding top/bottom
+    });
+    this.orbsDrawnList.position.set(10, 10); // 10px padding from edges
+    this.drawnOrbsRow.addChild(this.orbsDrawnList);
   }
 
   private createControlPanel(): void {
@@ -465,12 +530,16 @@ export class MainScreen extends Container {
 
     // Calculate total height needed for all elements
     const totalHeight =
-      60 +
-      40 +
-      30 +
+      60 + // title
+      40 + // connection button
+      30 + // username
       layout.RESOURCE_BAR.HEIGHT +
       layout.PANEL_SPACING +
-      layout.GAME_AREA.HEIGHT +
+      layout.GAME_STATUS.HEIGHT +
+      layout.PANEL_SPACING +
+      layout.ORB_INFO_ROW.HEIGHT +
+      layout.PANEL_SPACING +
+      layout.DRAWN_ORBS_ROW.HEIGHT +
       layout.PANEL_SPACING +
       layout.CONTROL_PANEL.HEIGHT;
 
@@ -497,10 +566,20 @@ export class MainScreen extends Container {
     this.resourceBar.y = currentY;
     currentY += layout.RESOURCE_BAR.HEIGHT + layout.PANEL_SPACING;
 
-    // Game area
-    this.gameArea.x = -layout.GAME_AREA.WIDTH / 2;
-    this.gameArea.y = currentY;
-    currentY += layout.GAME_AREA.HEIGHT + layout.PANEL_SPACING;
+    // Game status area
+    this.gameStatusArea.x = -layout.GAME_STATUS.WIDTH / 2;
+    this.gameStatusArea.y = currentY;
+    currentY += layout.GAME_STATUS.HEIGHT + layout.PANEL_SPACING;
+
+    // Orb info row
+    this.orbInfoRow.x = -layout.ORB_INFO_ROW.WIDTH / 2;
+    this.orbInfoRow.y = currentY;
+    currentY += layout.ORB_INFO_ROW.HEIGHT + layout.PANEL_SPACING;
+
+    // Drawn orbs row
+    this.drawnOrbsRow.x = -layout.DRAWN_ORBS_ROW.WIDTH / 2;
+    this.drawnOrbsRow.y = currentY;
+    currentY += layout.DRAWN_ORBS_ROW.HEIGHT + layout.PANEL_SPACING;
 
     // Control panel
     this.controlPanel.x = -layout.CONTROL_PANEL.WIDTH / 2;
@@ -520,7 +599,9 @@ export class MainScreen extends Container {
       this.titleLabel,
       this.connectButton,
       this.resourceBar,
-      this.gameArea,
+      this.gameStatusArea,
+      this.orbInfoRow,
+      this.drawnOrbsRow,
       this.controlPanel,
       this.settingsContainer,
     ];
@@ -744,6 +825,7 @@ export class MainScreen extends Container {
       await this.gameDataService.getPlayerGameHistory(playerAddress);
       await this.gameDataService.getPlayerGameCounter(playerAddress);
       await this.gameDataService.getPlayerOrbBagSlots(playerAddress);
+      await this.gameDataService.getPlayerDrawnOrbs(playerAddress);
 
       // Fetch combined data
       console.log("📊 ==> FETCHING COMBINED DATA <==");
@@ -786,25 +868,6 @@ export class MainScreen extends Container {
           this.updateUIWithMoonBagData(data);
         },
       );
-    } catch (error) {
-      console.error("❌ Error refreshing Moon Bag data:", error);
-    }
-  }
-
-  /** Legacy refresh method for non-transaction updates */
-  private async refreshMoonBagData(): Promise<void> {
-    try {
-      const playerAddress = engine().wallet.getState().address;
-      if (!playerAddress) {
-        console.log("🚫 No player address available for refresh");
-        return;
-      }
-
-      console.log("🔄 Refreshing Moon Bag data...");
-      const freshData =
-        await this.gameDataService.refetchMoonBagData(playerAddress);
-      this.updateUIWithMoonBagData(freshData);
-      console.log("✅ Moon Bag data refreshed!");
     } catch (error) {
       console.error("❌ Error refreshing Moon Bag data:", error);
     }
@@ -883,6 +946,13 @@ export class MainScreen extends Container {
         orbTexts.length > 0 ? orbTexts.join(" ") : "Empty bag";
     } else {
       this.orbBagLabel.text = "No orbs yet";
+    }
+
+    // Update drawn orbs list
+    if (data.drawnOrbs && activeGame) {
+      this.orbsDrawnList.updateDrawnOrbs(data.drawnOrbs, activeGame.game_id);
+    } else {
+      this.orbsDrawnList.updateDrawnOrbs([]);
     }
   }
 

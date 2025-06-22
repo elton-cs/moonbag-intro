@@ -53,8 +53,8 @@ export class CustomButton extends Container {
   public onPress = new SimpleEventEmitter();
 
   private options: Required<CustomButtonOptions>;
-  private background: Graphics;
-  private label: Label;
+  private background!: Graphics;
+  private labelText!: Label;
   private isPressed = false;
   private isHovered = false;
   private _enabled = true;
@@ -102,7 +102,7 @@ export class CustomButton extends Container {
   private createLabel(): void {
     const { textColor } = this.options;
 
-    this.label = new Label({
+    this.labelText = new Label({
       text: this.options.text,
       style: {
         fill: textColor,
@@ -112,7 +112,7 @@ export class CustomButton extends Container {
       },
     });
 
-    this.addChild(this.label);
+    this.addChild(this.labelText);
     this.updateTextSize();
     this.centerText();
   }
@@ -124,22 +124,22 @@ export class CustomButton extends Container {
 
     // Start with the desired font size
     let currentFontSize = fontSize;
-    this.label.style.fontSize = currentFontSize;
+    this.labelText.style.fontSize = currentFontSize;
 
     // Reduce font size until text fits within bounds
     while (
-      (this.label.width > maxWidth || this.label.height > maxHeight) &&
+      (this.labelText.width > maxWidth || this.labelText.height > maxHeight) &&
       currentFontSize > 8
     ) {
       currentFontSize -= 1;
-      this.label.style.fontSize = currentFontSize;
+      this.labelText.style.fontSize = currentFontSize;
     }
   }
 
   private centerText(): void {
     const { width, height } = this.options;
-    this.label.x = width / 2;
-    this.label.y = height / 2;
+    this.labelText.x = width / 2;
+    this.labelText.y = height / 2;
   }
 
   private setupInteractivity(): void {
@@ -216,7 +216,7 @@ export class CustomButton extends Container {
 
   set text(value: string) {
     this.options.text = value;
-    this.label.text = value;
+    this.labelText.text = value;
     this.updateTextSize();
     this.centerText();
   }
