@@ -49,6 +49,7 @@ export class MainScreen extends Container {
   private gameArea!: Container;
   private controlPanel!: Container;
   private startGameButton!: CustomButton;
+  private giftRocksButton!: CustomButton;
 
   // Settings UI (inline)
   private settingsContainer!: Container;
@@ -237,10 +238,10 @@ export class MainScreen extends Container {
     this.controlPanel.addChild(panelBackground);
 
     const buttonY = layout.CONTROL_PANEL.HEIGHT / 2;
-    const buttonWidth = 140;
+    const buttonWidth = 115; // Smaller to fit 4 buttons
     const buttonHeight = 50;
-    const totalButtonsWidth = buttonWidth * 3;
-    const spacing = (layout.CONTROL_PANEL.WIDTH - totalButtonsWidth) / 4;
+    const totalButtonsWidth = buttonWidth * 4; // Now 4 buttons
+    const spacing = (layout.CONTROL_PANEL.WIDTH - totalButtonsWidth) / 5; // 5 spaces for 4 buttons
     
     let currentX = spacing;
 
@@ -271,6 +272,22 @@ export class MainScreen extends Container {
     });
     shopButton.position.set(currentX, buttonY - buttonHeight/2);
     this.controlPanel.addChild(shopButton);
+
+    currentX += buttonWidth + spacing;
+
+    // Gift Rocks button
+    this.giftRocksButton = new CustomButton({
+      text: "🎁 GIFT ROCKS",
+      width: buttonWidth,
+      height: buttonHeight,
+      backgroundColor: 0x2a2a3a,
+      borderColor: 0xffaa00, // Golden color for gift
+      textColor: 0xffffff,
+      fontSize: 12, // Smaller font for longer text
+    });
+    this.giftRocksButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.giftRocksButton.onPress.on(() => this.handleGiftMoonRocks());
+    this.controlPanel.addChild(this.giftRocksButton);
 
     currentX += buttonWidth + spacing;
 
@@ -456,6 +473,44 @@ export class MainScreen extends Container {
     console.log(this.paused ? "Game paused" : "Game resumed");
   }
 
+  /** Handle gift moon rocks button press */
+  private async handleGiftMoonRocks(): Promise<void> {
+    try {
+      // Check if wallet is connected
+      if (!engine().wallet.isConnected()) {
+        console.error("Wallet must be connected to receive gift");
+        return;
+      }
+
+      console.log("Requesting moon rocks gift...");
+      this.giftRocksButton.enabled = false;
+      this.giftRocksButton.text = "🔄 GIFTING...";
+
+      // Call the gift moon rocks function
+      const result = await engine().wallet.giftMoonRocks();
+      
+      console.log("Moon rocks gift successful!", result);
+      this.giftRocksButton.text = "✅ GIFTED!";
+      
+      // Keep button disabled after successful gift
+      setTimeout(() => {
+        this.giftRocksButton.text = "🎁 GIFT USED";
+      }, 2000);
+
+    } catch (error) {
+      console.error("Failed to gift moon rocks:", error);
+      
+      // Re-enable button and show error state
+      this.giftRocksButton.enabled = true;
+      this.giftRocksButton.text = "❌ FAILED";
+      
+      // Reset button text after showing error
+      setTimeout(() => {
+        this.giftRocksButton.text = "🎁 GIFT ROCKS";
+      }, 2000);
+    }
+  }
+
   /** Handle wallet state changes and update UI accordingly */
   private onWalletStateChange(state: WalletConnectionState): void {
     switch (state.status) {
@@ -464,18 +519,21 @@ export class MainScreen extends Container {
         this.connectButton.enabled = true;
         this.usernameLabel.visible = false;
         this.startGameButton.enabled = false;
+        this.giftRocksButton.enabled = false;
         break;
 
       case ConnectionStatus.Connecting:
         this.connectButton.text = "Connecting...";
         this.connectButton.enabled = false;
         this.usernameLabel.visible = false;
+        this.giftRocksButton.enabled = false;
         break;
 
       case ConnectionStatus.Connected: {
         this.connectButton.text = "Connected";
         this.connectButton.enabled = false;
         this.startGameButton.enabled = true;
+        this.giftRocksButton.enabled = true;
 
         // Show username or address
         const displayName = engine().wallet.getUserDisplayName();
@@ -494,6 +552,7 @@ export class MainScreen extends Container {
         this.connectButton.enabled = true;
         this.usernameLabel.visible = false;
         this.startGameButton.enabled = false;
+        this.giftRocksButton.enabled = false;
         console.error("Wallet connection error:", state.error);
         break;
     }
