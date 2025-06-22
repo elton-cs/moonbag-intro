@@ -3,25 +3,38 @@
 <html>
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
-    <style></style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/src/styles.css" rel="stylesheet">
   </head>
 
-  <body>
-    <h1>Spawn and move</h1>
+  <body class="bg-gray-900 text-white min-h-screen p-8">
+    <div class="max-w-md mx-auto space-y-6">
+      <h1 class="text-3xl font-bold text-center mb-8">Spawn and Move</h1>
 
-    <button id="controller-button">Connect</button>
+      <button id="controller-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">Connect</button>
 
-    <div>
-      <div id="position-display" class="display">Position: (0, 0)</div>
-      <div id="moves-display" class="display">Moves remaining: 0</div>
+      <div class="space-y-4">
+        <div class="bg-gray-800 p-4 rounded-lg space-y-2">
+          <div id="position-display" class="text-lg font-mono">Position: (0, 0)</div>
+          <div id="moves-display" class="text-lg font-mono">Moves remaining: 0</div>
+        </div>
 
-      <button id="spawn-button" disabled>Spawn</button>
-      <button id="move-random-button" disabled>Move random</button>
-      <div>
-        <button id="up-button" disabled>Up</button>
-        <button id="down-button" disabled>Down</button>
-        <button id="left-button" disabled>Left</button>
-        <button id="right-button" disabled>Right</button>
+        <div class="space-y-3">
+          <button id="spawn-button" disabled class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Spawn</button>
+          <button id="move-random-button" disabled class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Move Random</button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2">
+          <div></div>
+          <button id="up-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors">↑</button>
+          <div></div>
+          <button id="left-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors">←</button>
+          <div></div>
+          <button id="right-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors">→</button>
+          <div></div>
+          <button id="down-button" disabled class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-colors">↓</button>
+          <div></div>
+        </div>
       </div>
     </div>
 
@@ -96,7 +109,7 @@
           let account = await controller.connect();
 
           document.getElementById('controller-button').textContent = 'Connected';
-          document.getElementById('controller-button').style.backgroundColor = '#4CAF50';
+          document.getElementById('controller-button').className = 'w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors';
 
           document.getElementById('spawn-button').disabled = false;
 
@@ -106,7 +119,7 @@
         } catch (error) {
           console.error('Failed to connect:', error);
           document.getElementById('controller-button').textContent = 'Connection Failed';
-          document.getElementById('controller-button').style.backgroundColor = '#f44336';
+          document.getElementById('controller-button').className = 'w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors';
         }
       };
     </script>
