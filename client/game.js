@@ -8,6 +8,8 @@
 const ACTION_CONTRACT = 'di-actions';
 const POSITION_MODEL = 'di-Position';
 const MOVES_MODEL = 'di-Moves';
+const GAME_MODEL = 'di-Game';
+const GAME_COUNTER_MODEL = 'di-GameCounter';
 
 function updateFromEntityData(entity) {
   if (entity.models) {
@@ -19,6 +21,11 @@ function updateFromEntityData(entity) {
     if (entity.models[MOVES_MODEL]) {
       const remaining = entity.models[MOVES_MODEL].remaining.value;
       updateMovesDisplay(remaining);
+    }
+
+    if (entity.models[GAME_MODEL]) {
+      const game = entity.models[GAME_MODEL];
+      updateGameDisplay(game);
     }
   }
 }
@@ -34,6 +41,45 @@ function updateMovesDisplay(remaining) {
   const movesDisplay = document.getElementById('moves-display');
   if (movesDisplay) {
     movesDisplay.textContent = `Moves remaining: ${remaining}`;
+  }
+}
+
+function updateGameDisplay(game) {
+  // Update individual game stats
+  const healthDisplay = document.getElementById('health-display');
+  if (healthDisplay) {
+    healthDisplay.textContent = `Health: ${game.health.value}`;
+  }
+
+  const pointsDisplay = document.getElementById('points-display');
+  if (pointsDisplay) {
+    pointsDisplay.textContent = `Points: ${game.points.value}`;
+  }
+
+  const multiplierDisplay = document.getElementById('multiplier-display');
+  if (multiplierDisplay) {
+    const multiplierValue = (game.multiplier.value / 100).toFixed(1);
+    multiplierDisplay.textContent = `Multiplier: ${multiplierValue}x`;
+  }
+
+  const cheddahDisplay = document.getElementById('cheddah-display');
+  if (cheddahDisplay) {
+    cheddahDisplay.textContent = `Cheddah: ${game.cheddah.value}`;
+  }
+
+  const moonRocksDisplay = document.getElementById('moon-rocks-display');
+  if (moonRocksDisplay) {
+    moonRocksDisplay.textContent = `Moon Rocks: ${game.moon_rocks.value}`;
+  }
+
+  const levelDisplay = document.getElementById('level-display');
+  if (levelDisplay) {
+    levelDisplay.textContent = `Level: ${game.current_level.value}`;
+  }
+
+  const gameIdDisplay = document.getElementById('game-id-display');
+  if (gameIdDisplay) {
+    gameIdDisplay.textContent = `Game #${game.game_id.value}`;
   }
 }
 
@@ -62,6 +108,10 @@ function initGame(account, manifest) {
     document.getElementById('down-button').disabled = false;
     document.getElementById('left-button').disabled = false;
     document.getElementById('move-random-button').disabled = false;
+  };
+
+  document.getElementById('spawn-game-button').onclick = async () => {
+    await spawnGame(account, manifest);
   };
 }
 
@@ -128,6 +178,17 @@ async function moveRandom(account, manifest) {
   ]);
 
   console.log('Transaction sent:', tx);
+}
+
+async function spawnGame(account, manifest) {
+  const tx = await account.execute({
+    contractAddress: manifest.contracts.find((contract) => contract.tag === ACTION_CONTRACT)
+      .address,
+    entrypoint: 'spawn_game',
+    calldata: [],
+  });
+
+  console.log('Game spawned transaction sent:', tx);
 }
 
 export { initGame, updateFromEntityData };

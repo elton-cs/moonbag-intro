@@ -14,14 +14,31 @@
       <button id="controller-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">Connect</button>
 
       <div class="space-y-4">
+        <!-- Legacy Demo Stats -->
         <div class="bg-gray-800 p-4 rounded-lg space-y-2">
-          <div id="position-display" class="text-lg font-mono">Position: (0, 0)</div>
-          <div id="moves-display" class="text-lg font-mono">Moves remaining: 0</div>
+          <h3 class="text-lg font-semibold text-orange-400">Movement Demo</h3>
+          <div id="position-display" class="text-sm font-mono">Position: (0, 0)</div>
+          <div id="moves-display" class="text-sm font-mono">Moves remaining: 0</div>
+        </div>
+
+        <!-- Moon Bag Game Stats -->
+        <div class="bg-gray-800 p-4 rounded-lg space-y-2">
+          <h3 class="text-lg font-semibold text-purple-400">Moon Bag Game</h3>
+          <div class="grid grid-cols-2 gap-2 text-sm font-mono">
+            <div id="game-id-display">Game #0</div>
+            <div id="level-display">Level: 1</div>
+            <div id="health-display">Health: 5</div>
+            <div id="points-display">Points: 0</div>
+            <div id="multiplier-display">Multiplier: 1.0x</div>
+            <div id="cheddah-display">Cheddah: 0</div>
+            <div id="moon-rocks-display" class="col-span-2">Moon Rocks: 304</div>
+          </div>
         </div>
 
         <div class="space-y-3">
-          <button id="spawn-button" disabled class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Spawn</button>
-          <button id="move-random-button" disabled class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Move Random</button>
+          <button id="spawn-button" disabled class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Spawn (Legacy)</button>
+          <button id="spawn-game-button" disabled class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Spawn Game</button>
+          <button id="move-random-button" disabled class="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors">Move Random</button>
         </div>
 
         <div class="grid grid-cols-3 gap-2">
@@ -112,6 +129,7 @@
           document.getElementById('controller-button').className = 'w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors';
 
           document.getElementById('spawn-button').disabled = false;
+          document.getElementById('spawn-game-button').disabled = false;
 
           run(account).catch((error) => {
             console.error(error);

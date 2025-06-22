@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0xb056c9813fdc442118bdfead6fda526e5daa5fd7d543304117ed80154ea752",
-      "class_hash": "0x41e53ae309fbbdd85ef84fc12ac7f8db30e8660e097263e4161b23ac9ae282c",
+      "address": "0x7adcabc7602def5b9f41e6999d370bc49d44180d97bc6449d6ff6ade47ab3d2",
+      "class_hash": "0x1a84c49e430e44d75c310e7c03b2d5f5508b293a7310599ad5ea1ec079a43b9",
       "abi": [
         {
           "type": "impl",
@@ -1415,6 +1415,13 @@
             {
               "type": "function",
               "name": "spawn",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "spawn_game",
               "inputs": [],
               "outputs": [],
               "state_mutability": "external"
@@ -1560,6 +1567,7 @@
       "selector": "0x4c09d12108e978b8c073f8d7186ed1aa144777a0aad9d1334532b5813038897",
       "systems": [
         "spawn",
+        "spawn_game",
         "move",
         "move_random",
         "upgrade"
@@ -1568,6 +1576,18 @@
   ],
   "libraries": [],
   "models": [
+    {
+      "members": [],
+      "class_hash": "0x7020670458accc6bddb18cf3006fd92cf33fc2399c6161e16a67c57efb42513",
+      "tag": "di-Game",
+      "selector": "0x2d80900338aad8f8000d3bdec178807b4e9c224d4211d843b6616482acb5aae"
+    },
+    {
+      "members": [],
+      "class_hash": "0x32acd97e603c5ccab597e4013faa1e5a80ef8549ee199d5b7300722f41b526",
+      "tag": "di-GameCounter",
+      "selector": "0x3449a0c9f140c775b216cc99fd651f1009ca474e3a9b232c773254d61fc96f3"
+    },
     {
       "members": [],
       "class_hash": "0x3bdd8b9fc059328965a1d42d0491d8b86cc8d56bba06a3cf4fd66286debe726",

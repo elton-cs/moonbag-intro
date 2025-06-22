@@ -4,6 +4,7 @@ use starknet::ContractAddress;
 #[starknet::interface]
 pub trait IActions<T> {
     fn spawn(ref self: T);
+    fn spawn_game(ref self: T);
     fn move(ref self: T, direction: Direction);
     fn move_random(ref self: T);
 }
@@ -23,21 +24,30 @@ pub enum Source {
 #[dojo::contract]
 pub mod actions {
     use super::{IActions, IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
-    use crate::models::{Direction, Moves, Position, PositionTrait};
+    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter};
 
     use core::num::traits::SaturatingSub;
     use dojo::model::ModelStorage;
+    use starknet::get_caller_address;
 
     pub const INIT_COORD: u32 = 10;
     pub const INIT_REMAINING_MOVES: u8 = 100;
     const VRF_PROVIDER_ADDRESS: felt252 = 0x15f542e25a4ce31481f986888c179b6e57412be340b8095f72f75a328fbb27b;
+    
+    // Moon Bag starting values from PRD
+    pub const INIT_HEALTH: u8 = 5;
+    pub const INIT_MOON_ROCKS: u32 = 304;
+    pub const INIT_CHEDDAH: u32 = 0;
+    pub const INIT_POINTS: u32 = 0;
+    pub const INIT_MULTIPLIER: u32 = 100; // 100 = 1.0x multiplier
+    pub const INIT_LEVEL: u8 = 1;
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
         fn spawn(ref self: ContractState) {
             let mut world = self.world_default();
 
-            let player = starknet::get_caller_address();
+            let player = get_caller_address();
 
             let position = Position {
                 player,
@@ -54,10 +64,46 @@ pub mod actions {
             world.write_model(@moves);
         }
 
+        fn spawn_game(ref self: ContractState) {
+            let mut world = self.world_default();
+
+            let player = get_caller_address();
+
+            // Get or initialize the game counter for this player
+            let mut game_counter: GameCounter = world.read_model(player);
+            
+            // If this is the first game for this player, initialize counter
+            if game_counter.next_game_id == 0 {
+                game_counter.next_game_id = 1;
+            }
+
+            let current_game_id = game_counter.next_game_id;
+
+            // Create new game instance with PRD starting values
+            let new_game = Game {
+                player,
+                game_id: current_game_id,
+                health: INIT_HEALTH,
+                points: INIT_POINTS,
+                multiplier: INIT_MULTIPLIER,
+                cheddah: INIT_CHEDDAH,
+                moon_rocks: INIT_MOON_ROCKS,
+                current_level: INIT_LEVEL,
+                is_active: true,
+            };
+
+            // Increment the counter for next game
+            game_counter.next_game_id += 1;
+
+            // Write both models to world
+            world.write_model(@new_game);
+            world.write_model(@game_counter);
+        }
+
         fn move(ref self: ContractState, direction: Direction) {
             let mut world = self.world_default();
 
-            let player = starknet::get_caller_address();
+            let player = get_caller_address();
 
             let mut position: Position = world.read_model(player);
             position.apply_direction(direction);

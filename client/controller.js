@@ -22,7 +22,12 @@ const controllerOpts = {
           {
             name: 'Spawn',
             entrypoint: 'spawn',
-            description: 'Spawn the player in the game',
+            description: 'Spawn the player in the game (legacy)',
+          },
+          {
+            name: 'Spawn Game',
+            entrypoint: 'spawn_game',
+            description: 'Start a new Moon Bag game instance',
           },
           {
             name: 'Move',
@@ -32,7 +37,7 @@ const controllerOpts = {
           {
             name: 'Move Random',
             entrypoint: 'move_random',
-            description: 'Move the player in the game',
+            description: 'Move the player randomly',
           },
         ],
       },
