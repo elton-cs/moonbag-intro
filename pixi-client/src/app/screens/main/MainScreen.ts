@@ -14,6 +14,33 @@ export class MainScreen extends Container {
   /** Assets bundles required by this screen */
   public static assetBundles = ["main"];
 
+  // Layout constants for consistent spacing
+  private static readonly LAYOUT = {
+    PADDING: 20,
+    MARGIN: 40,
+    PANEL_SPACING: 30,
+    RESOURCE_BAR: {
+      WIDTH: 800,
+      HEIGHT: 80,
+      BORDER_RADIUS: 10,
+    },
+    GAME_AREA: {
+      WIDTH: 600,
+      HEIGHT: 400,
+      BORDER_RADIUS: 20,
+    },
+    CONTROL_PANEL: {
+      WIDTH: 800,
+      HEIGHT: 120,
+      BORDER_RADIUS: 10,
+    },
+    CONNECTION: {
+      TITLE_SPACING: 80,
+      BUTTON_SPACING: 80,
+      USERNAME_SPACING: 60,
+    },
+  };
+
   // UI Containers
   public mainContainer!: Container;
   private connectionContainer!: Container;
@@ -35,6 +62,30 @@ export class MainScreen extends Container {
 
   private paused = false;
   private walletUnsubscribe?: () => void;
+
+  // Helper methods for positioning calculations
+
+  private calculateGameUILayout() {
+    const layout = MainScreen.LAYOUT;
+    const totalGameHeight =
+      layout.RESOURCE_BAR.HEIGHT +
+      layout.GAME_AREA.HEIGHT +
+      layout.CONTROL_PANEL.HEIGHT +
+      layout.PANEL_SPACING * 2;
+
+    return {
+      resourceBarY: -(totalGameHeight / 2),
+      gameAreaY:
+        -(totalGameHeight / 2) +
+        layout.RESOURCE_BAR.HEIGHT +
+        layout.PANEL_SPACING,
+      controlPanelY:
+        -(totalGameHeight / 2) +
+        layout.RESOURCE_BAR.HEIGHT +
+        layout.GAME_AREA.HEIGHT +
+        layout.PANEL_SPACING * 2,
+    };
+  }
 
   constructor() {
     super();
@@ -98,6 +149,7 @@ export class MainScreen extends Container {
       width: 301,
       height: 112,
     });
+    this.connectButton.anchor.set(0.5);
     this.connectButton.onPress.connect(() => this.handleConnectWallet());
     this.connectionContainer.addChild(this.connectButton);
 
@@ -122,12 +174,26 @@ export class MainScreen extends Container {
   }
 
   private createResourceBar(): void {
+    const layout = MainScreen.LAYOUT;
+
     // Resource display bar at top
     const barBackground = new Graphics();
-    barBackground.roundRect(0, 0, 800, 80, 10);
+    barBackground.roundRect(
+      0,
+      0,
+      layout.RESOURCE_BAR.WIDTH,
+      layout.RESOURCE_BAR.HEIGHT,
+      layout.RESOURCE_BAR.BORDER_RADIUS,
+    );
     barBackground.fill(0x1a1a2a); // Dark panel
     barBackground.stroke({ color: 0x8a4fff, width: 2 }); // Purple border
     this.resourceBar.addChild(barBackground);
+
+    // Position resource labels with consistent spacing
+    const leftColumnX = layout.PADDING;
+    const rightColumnX = layout.RESOURCE_BAR.WIDTH / 2 + layout.PADDING;
+    const firstRowY = layout.PADDING;
+    const secondRowY = layout.RESOURCE_BAR.HEIGHT - layout.PADDING - 20; // Subtract text height estimate
 
     // Health display
     const healthLabel = new Label({
@@ -138,7 +204,7 @@ export class MainScreen extends Container {
         fontWeight: "bold",
       },
     });
-    healthLabel.position.set(20, 15);
+    healthLabel.position.set(leftColumnX, firstRowY);
     this.resourceBar.addChild(healthLabel);
 
     // Moon Rocks display
@@ -150,7 +216,7 @@ export class MainScreen extends Container {
         fontWeight: "bold",
       },
     });
-    moonRocksLabel.position.set(20, 40);
+    moonRocksLabel.position.set(leftColumnX, secondRowY);
     this.resourceBar.addChild(moonRocksLabel);
 
     // Cheddah display
@@ -162,7 +228,7 @@ export class MainScreen extends Container {
         fontWeight: "bold",
       },
     });
-    cheddahLabel.position.set(400, 15);
+    cheddahLabel.position.set(rightColumnX, firstRowY);
     this.resourceBar.addChild(cheddahLabel);
 
     // Points display
@@ -174,17 +240,31 @@ export class MainScreen extends Container {
         fontWeight: "bold",
       },
     });
-    pointsLabel.position.set(400, 40);
+    pointsLabel.position.set(rightColumnX, secondRowY);
     this.resourceBar.addChild(pointsLabel);
   }
 
   private createGameArea(): void {
+    const layout = MainScreen.LAYOUT;
+
     // Central game area with bag visualization
     const gameBackground = new Graphics();
-    gameBackground.roundRect(0, 0, 600, 400, 20);
+    gameBackground.roundRect(
+      0,
+      0,
+      layout.GAME_AREA.WIDTH,
+      layout.GAME_AREA.HEIGHT,
+      layout.GAME_AREA.BORDER_RADIUS,
+    );
     gameBackground.fill(0x1a1a2a);
     gameBackground.stroke({ color: 0x8a4fff, width: 3 });
     this.gameArea.addChild(gameBackground);
+
+    // Calculate center positions within the game area
+    const centerX = layout.GAME_AREA.WIDTH / 2;
+    const titleY = layout.MARGIN + 10; // Title near top with margin
+    const bagY = layout.GAME_AREA.HEIGHT / 2; // Bag in vertical center
+    const bagLabelY = bagY + 100 + layout.PADDING; // Label below bag with padding
 
     // Game title
     const gameTitle = new Label({
@@ -197,7 +277,7 @@ export class MainScreen extends Container {
       },
     });
     gameTitle.anchor.set(0.5);
-    gameTitle.position.set(300, 50);
+    gameTitle.position.set(centerX, titleY);
     this.gameArea.addChild(gameTitle);
 
     // Bag representation (large circle)
@@ -205,7 +285,7 @@ export class MainScreen extends Container {
     bag.circle(0, 0, 80);
     bag.fill(0x2a2a3a);
     bag.stroke({ color: 0xc0c0d0, width: 3 });
-    bag.position.set(300, 200);
+    bag.position.set(centerX, bagY);
     this.gameArea.addChild(bag);
 
     // Bag label
@@ -218,17 +298,33 @@ export class MainScreen extends Container {
       },
     });
     bagLabel.anchor.set(0.5);
-    bagLabel.position.set(300, 320);
+    bagLabel.position.set(centerX, bagLabelY);
     this.gameArea.addChild(bagLabel);
   }
 
   private createControlPanel(): void {
+    const layout = MainScreen.LAYOUT;
+
     // Bottom control panel
     const panelBackground = new Graphics();
-    panelBackground.roundRect(0, 0, 800, 120, 10);
+    panelBackground.roundRect(
+      0,
+      0,
+      layout.CONTROL_PANEL.WIDTH,
+      layout.CONTROL_PANEL.HEIGHT,
+      layout.CONTROL_PANEL.BORDER_RADIUS,
+    );
     panelBackground.fill(0x1a1a2a);
     panelBackground.stroke({ color: 0x8a4fff, width: 2 });
     this.controlPanel.addChild(panelBackground);
+
+    // Calculate button positions for even spacing
+    const buttonY = (layout.CONTROL_PANEL.HEIGHT - 60) / 2; // Center buttons vertically
+    const totalButtonWidth = 250 + 150 + 150; // Start + Shop + Stats button widths
+    const spacing =
+      (layout.CONTROL_PANEL.WIDTH - totalButtonWidth - layout.PADDING * 2) / 2; // Space between buttons
+
+    let currentX = layout.PADDING;
 
     // Start Game button
     this.startGameButton = new Button({
@@ -236,9 +332,11 @@ export class MainScreen extends Container {
       width: 250,
       height: 60,
     });
-    this.startGameButton.position.set(50, 30);
+    this.startGameButton.position.set(currentX, buttonY);
     this.startGameButton.onPress.connect(() => this.handleStartGame());
     this.controlPanel.addChild(this.startGameButton);
+
+    currentX += 250 + spacing;
 
     // Shop button (placeholder for future)
     const shopButton = new Button({
@@ -246,9 +344,11 @@ export class MainScreen extends Container {
       width: 150,
       height: 60,
     });
-    shopButton.position.set(320, 30);
+    shopButton.position.set(currentX, buttonY);
     shopButton.enabled = false; // Disabled for now
     this.controlPanel.addChild(shopButton);
+
+    currentX += 150 + spacing;
 
     // Stats button (placeholder for future)
     const statsButton = new Button({
@@ -256,7 +356,7 @@ export class MainScreen extends Container {
       width: 150,
       height: 60,
     });
-    statsButton.position.set(490, 30);
+    statsButton.position.set(currentX, buttonY);
     statsButton.enabled = false; // Disabled for now
     this.controlPanel.addChild(statsButton);
   }
@@ -295,6 +395,7 @@ export class MainScreen extends Container {
 
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
+    const layout = MainScreen.LAYOUT;
     const centerX = width * 0.5;
     const centerY = height * 0.5;
 
@@ -307,25 +408,30 @@ export class MainScreen extends Container {
     this.mainContainer.x = centerX;
     this.mainContainer.y = centerY;
 
-    // Position connection UI (centered)
+    // Position connection UI with consistent spacing
     this.titleLabel.x = 0;
-    this.titleLabel.y = -150;
+    this.titleLabel.y = -layout.CONNECTION.TITLE_SPACING;
 
-    this.connectButton.x = -this.connectButton.width / 2;
-    this.connectButton.y = -50;
+    this.connectButton.x = 0; // Now centered due to anchor
+    this.connectButton.y = 0;
 
     this.usernameLabel.x = 0;
-    this.usernameLabel.y = 100;
+    this.usernameLabel.y = layout.CONNECTION.USERNAME_SPACING;
 
-    // Position game UI
-    this.resourceBar.x = -400;
-    this.resourceBar.y = -300;
+    // Position game UI using calculated layout
+    const gameLayout = this.calculateGameUILayout();
 
-    this.gameArea.x = -300;
-    this.gameArea.y = -150;
+    // Center resource bar horizontally
+    this.resourceBar.x = -layout.RESOURCE_BAR.WIDTH / 2;
+    this.resourceBar.y = gameLayout.resourceBarY;
 
-    this.controlPanel.x = -400;
-    this.controlPanel.y = 250;
+    // Center game area horizontally
+    this.gameArea.x = -layout.GAME_AREA.WIDTH / 2;
+    this.gameArea.y = gameLayout.gameAreaY;
+
+    // Center control panel horizontally
+    this.controlPanel.x = -layout.CONTROL_PANEL.WIDTH / 2;
+    this.controlPanel.y = gameLayout.controlPanelY;
   }
 
   /** Show screen with animations */
