@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x7adcabc7602def5b9f41e6999d370bc49d44180d97bc6449d6ff6ade47ab3d2",
-      "class_hash": "0x1a84c49e430e44d75c310e7c03b2d5f5508b293a7310599ad5ea1ec079a43b9",
+      "address": "0xea420dc88e8c7f21a094d28509c1dfd79b746a618dff2c6cdc65ac7af14463",
+      "class_hash": "0x4c604419e66c221029b5b5c8a04c99a062c30ce5254e452e7cdf006be6bd4b4",
       "abi": [
         {
           "type": "impl",
@@ -1422,6 +1422,13 @@
             {
               "type": "function",
               "name": "spawn_game",
+              "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "gift_moonrocks",
               "inputs": [],
               "outputs": [],
               "state_mutability": "external"
@@ -1568,6 +1575,7 @@
       "systems": [
         "spawn",
         "spawn_game",
+        "gift_moonrocks",
         "move",
         "move_random",
         "upgrade"
@@ -1578,7 +1586,7 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x7020670458accc6bddb18cf3006fd92cf33fc2399c6161e16a67c57efb42513",
+      "class_hash": "0x482fe719702bf9ac8c2f761bd94445b8cd94ab82131b9e789817e8d396709ee",
       "tag": "di-Game",
       "selector": "0x2d80900338aad8f8000d3bdec178807b4e9c224d4211d843b6616482acb5aae"
     },
@@ -1587,6 +1595,12 @@
       "class_hash": "0x32acd97e603c5ccab597e4013faa1e5a80ef8549ee199d5b7300722f41b526",
       "tag": "di-GameCounter",
       "selector": "0x3449a0c9f140c775b216cc99fd651f1009ca474e3a9b232c773254d61fc96f3"
+    },
+    {
+      "members": [],
+      "class_hash": "0x2066ac1f3ca09d215aea927d63e01cc8d28d12ad51695331410db96f76b7720",
+      "tag": "di-MoonRocks",
+      "selector": "0x7c6dc1ddf24c1dafe856281dbeaa963842ce6e568e904c92b2d4520f15fe7fd"
     },
     {
       "members": [],

@@ -10,6 +10,10 @@ const POSITION_MODEL = 'di-Position';
 const MOVES_MODEL = 'di-Moves';
 const GAME_MODEL = 'di-Game';
 const GAME_COUNTER_MODEL = 'di-GameCounter';
+const MOON_ROCKS_MODEL = 'di-MoonRocks';
+
+// Game constants
+const GAME_ENTRY_COST = 10;
 
 function updateFromEntityData(entity) {
   if (entity.models) {
@@ -26,6 +30,11 @@ function updateFromEntityData(entity) {
     if (entity.models[GAME_MODEL]) {
       const game = entity.models[GAME_MODEL];
       updateGameDisplay(game);
+    }
+
+    if (entity.models[MOON_ROCKS_MODEL]) {
+      const moonRocks = entity.models[MOON_ROCKS_MODEL];
+      updateMoonRocksDisplay(moonRocks.amount.value);
     }
   }
 }
@@ -67,11 +76,6 @@ function updateGameDisplay(game) {
     cheddahDisplay.textContent = `Cheddah: ${game.cheddah.value}`;
   }
 
-  const moonRocksDisplay = document.getElementById('moon-rocks-display');
-  if (moonRocksDisplay) {
-    moonRocksDisplay.textContent = `Moon Rocks: ${game.moon_rocks.value}`;
-  }
-
   const levelDisplay = document.getElementById('level-display');
   if (levelDisplay) {
     levelDisplay.textContent = `Level: ${game.current_level.value}`;
@@ -83,7 +87,44 @@ function updateGameDisplay(game) {
   }
 }
 
+function updateMoonRocksDisplay(amount) {
+  const moonRocksDisplay = document.getElementById('moon-rocks-display');
+  if (moonRocksDisplay) {
+    moonRocksDisplay.textContent = `Moon Rocks: ${amount}`;
+  }
+
+  // Update spawn game button text with cost
+  const spawnGameButton = document.getElementById('spawn-game-button');
+  if (spawnGameButton) {
+    const canAfford = amount >= GAME_ENTRY_COST;
+    spawnGameButton.textContent = `Spawn Game (${GAME_ENTRY_COST} Moon Rocks)`;
+    if (!canAfford && !spawnGameButton.disabled) {
+      spawnGameButton.style.opacity = '0.6';
+    } else if (canAfford) {
+      spawnGameButton.style.opacity = '1';
+    }
+  }
+
+  // Show/hide gift button based on moon rocks amount
+  const giftButton = document.getElementById('gift-moonrocks-button');
+  if (giftButton) {
+    if (amount === 0) {
+      giftButton.style.display = 'block';
+    } else {
+      giftButton.style.display = 'none';
+    }
+  }
+}
+
+function initializeMoonRocksDisplay() {
+  // Initialize with 0 moon rocks display for new users
+  updateMoonRocksDisplay(0);
+}
+
 function initGame(account, manifest) {
+  // Initialize moon rocks display for new users
+  initializeMoonRocksDisplay();
+  
   document.getElementById('up-button').onclick = async () => {
     await move(account, manifest, 'up');
   };
@@ -112,6 +153,10 @@ function initGame(account, manifest) {
 
   document.getElementById('spawn-game-button').onclick = async () => {
     await spawnGame(account, manifest);
+  };
+
+  document.getElementById('gift-moonrocks-button').onclick = async () => {
+    await giftMoonRocks(account, manifest);
   };
 }
 
@@ -189,6 +234,17 @@ async function spawnGame(account, manifest) {
   });
 
   console.log('Game spawned transaction sent:', tx);
+}
+
+async function giftMoonRocks(account, manifest) {
+  const tx = await account.execute({
+    contractAddress: manifest.contracts.find((contract) => contract.tag === ACTION_CONTRACT)
+      .address,
+    entrypoint: 'gift_moonrocks',
+    calldata: [],
+  });
+
+  console.log('Moon rocks gift transaction sent:', tx);
 }
 
 export { initGame, updateFromEntityData };

@@ -14,6 +14,13 @@
       <button id="controller-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">Connect</button>
 
       <div class="space-y-4">
+        <!-- Player Currency -->
+        <div class="bg-gradient-to-r from-blue-900 to-purple-900 p-4 rounded-lg">
+          <h3 class="text-lg font-semibold text-yellow-400 mb-2">Player Currency</h3>
+          <div id="moon-rocks-display" class="text-xl font-bold text-yellow-200">Moon Rocks: 0</div>
+          <button id="gift-moonrocks-button" class="mt-2 w-full bg-yellow-600 hover:bg-yellow-700 text-black font-semibold py-2 px-4 rounded-lg transition-colors" style="display: none;">Get 500 Moon Rocks (New Player Gift)</button>
+        </div>
+
         <!-- Legacy Demo Stats -->
         <div class="bg-gray-800 p-4 rounded-lg space-y-2">
           <h3 class="text-lg font-semibold text-orange-400">Movement Demo</h3>
@@ -23,7 +30,7 @@
 
         <!-- Moon Bag Game Stats -->
         <div class="bg-gray-800 p-4 rounded-lg space-y-2">
-          <h3 class="text-lg font-semibold text-purple-400">Moon Bag Game</h3>
+          <h3 class="text-lg font-semibold text-purple-400">Current Game</h3>
           <div class="grid grid-cols-2 gap-2 text-sm font-mono">
             <div id="game-id-display">Game #0</div>
             <div id="level-display">Level: 1</div>
@@ -31,7 +38,6 @@
             <div id="points-display">Points: 0</div>
             <div id="multiplier-display">Multiplier: 1.0x</div>
             <div id="cheddah-display">Cheddah: 0</div>
-            <div id="moon-rocks-display" class="col-span-2">Moon Rocks: 304</div>
           </div>
         </div>
 
@@ -130,6 +136,7 @@
 
           document.getElementById('spawn-button').disabled = false;
           document.getElementById('spawn-game-button').disabled = false;
+          document.getElementById('gift-moonrocks-button').disabled = false;
 
           run(account).catch((error) => {
             console.error(error);

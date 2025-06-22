@@ -30,6 +30,15 @@ pub struct Moves {
     pub remaining: u8,
 }
 
+// Moon Rocks currency model - separate from game instances
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct MoonRocks {
+    #[key]
+    pub player: ContractAddress,
+    pub amount: u32,
+}
+
 // Game model for Moon Bag - represents a single playable game instance
 #[derive(Copy, Drop, Serde)]
 #[dojo::model]
@@ -42,7 +51,6 @@ pub struct Game {
     pub points: u32,
     pub multiplier: u32,  // stored as fixed point (100 = 1.0x)
     pub cheddah: u32,
-    pub moon_rocks: u32,
     pub current_level: u8,
     pub is_active: bool,
 }

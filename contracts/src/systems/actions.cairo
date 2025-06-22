@@ -5,6 +5,7 @@ use starknet::ContractAddress;
 pub trait IActions<T> {
     fn spawn(ref self: T);
     fn spawn_game(ref self: T);
+    fn gift_moonrocks(ref self: T);
     fn move(ref self: T, direction: Direction);
     fn move_random(ref self: T);
 }
@@ -24,7 +25,7 @@ pub enum Source {
 #[dojo::contract]
 pub mod actions {
     use super::{IActions, IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
-    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter};
+    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter, MoonRocks};
 
     use core::num::traits::SaturatingSub;
     use dojo::model::ModelStorage;
@@ -36,11 +37,14 @@ pub mod actions {
     
     // Moon Bag starting values from PRD
     pub const INIT_HEALTH: u8 = 5;
-    pub const INIT_MOON_ROCKS: u32 = 304;
     pub const INIT_CHEDDAH: u32 = 0;
     pub const INIT_POINTS: u32 = 0;
     pub const INIT_MULTIPLIER: u32 = 100; // 100 = 1.0x multiplier
     pub const INIT_LEVEL: u8 = 1;
+    
+    // Moon Rocks currency constants
+    pub const GAME_ENTRY_COST: u32 = 10; // Moon rocks cost per game
+    pub const GIFT_AMOUNT: u32 = 500;    // Gift for new players
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
@@ -69,6 +73,14 @@ pub mod actions {
 
             let player = get_caller_address();
 
+            // Check player has sufficient moon rocks for game
+            let mut moon_rocks: MoonRocks = world.read_model(player);
+            assert(moon_rocks.amount >= GAME_ENTRY_COST, 'Insufficient moon rocks');
+            
+            // Deduct game entry cost
+            moon_rocks.amount -= GAME_ENTRY_COST;
+            world.write_model(@moon_rocks);
+
             // Get or initialize the game counter for this player
             let mut game_counter: GameCounter = world.read_model(player);
             
@@ -87,7 +99,6 @@ pub mod actions {
                 points: INIT_POINTS,
                 multiplier: INIT_MULTIPLIER,
                 cheddah: INIT_CHEDDAH,
-                moon_rocks: INIT_MOON_ROCKS,
                 current_level: INIT_LEVEL,
                 is_active: true,
             };
@@ -95,9 +106,27 @@ pub mod actions {
             // Increment the counter for next game
             game_counter.next_game_id += 1;
 
-            // Write both models to world
+            // Write models to world
             world.write_model(@new_game);
             world.write_model(@game_counter);
+        }
+
+        fn gift_moonrocks(ref self: ContractState) {
+            let mut world = self.world_default();
+
+            let player = get_caller_address();
+
+            // Check if player already has moon rocks (only gift to new players)
+            let moon_rocks: MoonRocks = world.read_model(player);
+            assert(moon_rocks.amount == 0, 'Player already has moon rocks');
+
+            // Give gift to new player
+            let gift = MoonRocks {
+                player,
+                amount: GIFT_AMOUNT,
+            };
+
+            world.write_model(@gift);
         }
 
         fn move(ref self: ContractState, direction: Direction) {

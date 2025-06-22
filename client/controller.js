@@ -27,7 +27,12 @@ const controllerOpts = {
           {
             name: 'Spawn Game',
             entrypoint: 'spawn_game',
-            description: 'Start a new Moon Bag game instance',
+            description: 'Start a new Moon Bag game instance (costs 10 Moon Rocks)',
+          },
+          {
+            name: 'Gift Moon Rocks',
+            entrypoint: 'gift_moonrocks',
+            description: 'Receive 500 Moon Rocks for new players',
           },
           {
             name: 'Move',
