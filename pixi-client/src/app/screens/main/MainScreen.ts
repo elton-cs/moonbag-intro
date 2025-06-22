@@ -51,6 +51,9 @@ export class MainScreen extends Container {
   private gameArea!: Container;
   private controlPanel!: Container;
   private startGameButton!: CustomButton;
+  private pullOrbButton!: CustomButton;
+  private advanceLevelButton!: CustomButton;
+  private quitGameButton!: CustomButton;
   private giftRocksButton!: CustomButton;
 
   // Resource labels (updateable)
@@ -292,10 +295,10 @@ export class MainScreen extends Container {
     this.controlPanel.addChild(panelBackground);
 
     const buttonY = layout.CONTROL_PANEL.HEIGHT / 2;
-    const buttonWidth = 115; // Smaller to fit 4 buttons
+    const buttonWidth = 95; // Smaller to fit 5 buttons
     const buttonHeight = 50;
-    const totalButtonsWidth = buttonWidth * 4; // Now 4 buttons
-    const spacing = (layout.CONTROL_PANEL.WIDTH - totalButtonsWidth) / 5; // 5 spaces for 4 buttons
+    const totalButtonsWidth = buttonWidth * 5; // Now 5 buttons
+    const spacing = (layout.CONTROL_PANEL.WIDTH - totalButtonsWidth) / 6; // 6 spaces for 5 buttons
     
     let currentX = spacing;
 
@@ -307,6 +310,7 @@ export class MainScreen extends Container {
       backgroundColor: 0x2a2a3a,
       borderColor: 0x8a4fff,
       textColor: 0xffffff,
+      fontSize: 11,
     });
     this.startGameButton.position.set(currentX, buttonY - buttonHeight/2);
     this.startGameButton.onPress.on(() => this.handleStartGame());
@@ -314,49 +318,70 @@ export class MainScreen extends Container {
 
     currentX += buttonWidth + spacing;
 
-    // Shop button
-    const shopButton = new CustomButton({
-      text: "🛒 SHOP",
+    // Pull Orb button
+    this.pullOrbButton = new CustomButton({
+      text: "🎲 PULL ORB",
       width: buttonWidth,
       height: buttonHeight,
-      backgroundColor: 0x1a1a2a,
-      borderColor: 0x555555,
-      textColor: 0x888888,
-      enabled: false,
+      backgroundColor: 0x2a2a3a,
+      borderColor: 0x4a9eff, // Blue for main game action
+      textColor: 0xffffff,
+      fontSize: 10,
     });
-    shopButton.position.set(currentX, buttonY - buttonHeight/2);
-    this.controlPanel.addChild(shopButton);
+    this.pullOrbButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.pullOrbButton.onPress.on(() => this.handlePullOrb());
+    this.pullOrbButton.visible = false; // Initially hidden
+    this.controlPanel.addChild(this.pullOrbButton);
+
+    currentX += buttonWidth + spacing;
+
+    // Advance Level button
+    this.advanceLevelButton = new CustomButton({
+      text: "⬆️ ADVANCE",
+      width: buttonWidth,
+      height: buttonHeight,
+      backgroundColor: 0x2a2a3a,
+      borderColor: 0x44ff88, // Green for progression
+      textColor: 0xffffff,
+      fontSize: 10,
+    });
+    this.advanceLevelButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.advanceLevelButton.onPress.on(() => this.handleAdvanceLevel());
+    this.advanceLevelButton.visible = false; // Initially hidden
+    this.controlPanel.addChild(this.advanceLevelButton);
+
+    currentX += buttonWidth + spacing;
+
+    // Quit Game button
+    this.quitGameButton = new CustomButton({
+      text: "💰 CASH OUT",
+      width: buttonWidth,
+      height: buttonHeight,
+      backgroundColor: 0x2a2a3a,
+      borderColor: 0xff6644, // Orange/red for ending
+      textColor: 0xffffff,
+      fontSize: 10,
+    });
+    this.quitGameButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.quitGameButton.onPress.on(() => this.handleQuitGame());
+    this.quitGameButton.visible = false; // Initially hidden
+    this.controlPanel.addChild(this.quitGameButton);
 
     currentX += buttonWidth + spacing;
 
     // Gift Rocks button
     this.giftRocksButton = new CustomButton({
-      text: "🎁 GIFT ROCKS",
+      text: "🎁 GIFT",
       width: buttonWidth,
       height: buttonHeight,
       backgroundColor: 0x2a2a3a,
       borderColor: 0xffaa00, // Golden color for gift
       textColor: 0xffffff,
-      fontSize: 12, // Smaller font for longer text
+      fontSize: 11,
     });
     this.giftRocksButton.position.set(currentX, buttonY - buttonHeight/2);
     this.giftRocksButton.onPress.on(() => this.handleGiftMoonRocks());
     this.controlPanel.addChild(this.giftRocksButton);
-
-    currentX += buttonWidth + spacing;
-
-    // Stats button
-    const statsButton = new CustomButton({
-      text: "📊 STATS",
-      width: buttonWidth,
-      height: buttonHeight,
-      backgroundColor: 0x1a1a2a,
-      borderColor: 0x555555,
-      textColor: 0x888888,
-      enabled: false,
-    });
-    statsButton.position.set(currentX, buttonY - buttonHeight/2);
-    this.controlPanel.addChild(statsButton);
   }
 
   private createSettingsSection(): void {
@@ -526,6 +551,92 @@ export class MainScreen extends Container {
       await this.refreshMoonBagData();
     } catch (error) {
       console.error("Failed to start game:", error);
+    }
+  }
+
+  /** Handle pull orb button press */
+  private async handlePullOrb(): Promise<void> {
+    try {
+      console.log("Pulling orb from bag...");
+      this.pullOrbButton.enabled = false;
+      this.pullOrbButton.text = "🔄 PULLING...";
+
+      await engine().wallet.pullOrb();
+      console.log("Orb pulled successfully!");
+      
+      // Refresh blockchain data after successful transaction
+      await this.refreshMoonBagData();
+      
+      // Re-enable button (will be updated by game state logic)
+      this.pullOrbButton.enabled = true;
+      this.pullOrbButton.text = "🎲 PULL ORB";
+    } catch (error) {
+      console.error("Failed to pull orb:", error);
+      
+      // Re-enable button and show error state
+      this.pullOrbButton.enabled = true;
+      this.pullOrbButton.text = "❌ FAILED";
+      
+      // Reset button text after showing error
+      setTimeout(() => {
+        this.pullOrbButton.text = "🎲 PULL ORB";
+      }, 2000);
+    }
+  }
+
+  /** Handle advance level button press */
+  private async handleAdvanceLevel(): Promise<void> {
+    try {
+      console.log("Advancing to next level...");
+      this.advanceLevelButton.enabled = false;
+      this.advanceLevelButton.text = "🔄 ADVANCING...";
+
+      await engine().wallet.advanceToNextLevel();
+      console.log("Advanced to next level successfully!");
+      
+      // Refresh blockchain data after successful transaction
+      await this.refreshMoonBagData();
+      
+      // Button visibility will be updated by game state logic
+    } catch (error) {
+      console.error("Failed to advance level:", error);
+      
+      // Re-enable button and show error state
+      this.advanceLevelButton.enabled = true;
+      this.advanceLevelButton.text = "❌ FAILED";
+      
+      // Reset button text after showing error
+      setTimeout(() => {
+        this.advanceLevelButton.text = "⬆️ ADVANCE";
+      }, 2000);
+    }
+  }
+
+  /** Handle quit game button press */
+  private async handleQuitGame(): Promise<void> {
+    try {
+      console.log("Quitting game and cashing out...");
+      this.quitGameButton.enabled = false;
+      this.quitGameButton.text = "🔄 CASHING...";
+
+      await engine().wallet.quitGame();
+      console.log("Game quit successfully!");
+      
+      // Refresh blockchain data after successful transaction
+      await this.refreshMoonBagData();
+      
+      // Button visibility will be updated by game state logic
+    } catch (error) {
+      console.error("Failed to quit game:", error);
+      
+      // Re-enable button and show error state
+      this.quitGameButton.enabled = true;
+      this.quitGameButton.text = "❌ FAILED";
+      
+      // Reset button text after showing error
+      setTimeout(() => {
+        this.quitGameButton.text = "💰 CASH OUT";
+      }, 2000);
     }
   }
 
@@ -718,29 +829,50 @@ export class MainScreen extends Container {
 
   /** Update control states based on game state */
   private updateControlsForGameState(gameState: string, hasActiveGame: boolean): void {
+    // Hide all game action buttons initially
+    this.pullOrbButton.visible = false;
+    this.advanceLevelButton.visible = false;
+    this.quitGameButton.visible = false;
+
     if (!hasActiveGame) {
+      // No active game - show start button only
       this.startGameButton.enabled = true;
       this.startGameButton.text = "🎮 START";
+      this.startGameButton.visible = true;
       return;
     }
 
     switch (gameState) {
       case "Active":
-        this.startGameButton.enabled = false;
-        this.startGameButton.text = "🎮 IN GAME";
+        // Game is active - show pull orb button, hide start
+        this.startGameButton.visible = false;
+        this.pullOrbButton.visible = true;
+        this.pullOrbButton.enabled = true;
         break;
+        
       case "LevelComplete":
-        this.startGameButton.enabled = true;
-        this.startGameButton.text = "⬆️ NEXT LEVEL";
+        // Level completed - show advance and quit options
+        this.startGameButton.visible = false;
+        this.advanceLevelButton.visible = true;
+        this.advanceLevelButton.enabled = true;
+        this.quitGameButton.visible = true;
+        this.quitGameButton.enabled = true;
         break;
+        
       case "GameWon":
       case "GameLost":
-        this.startGameButton.enabled = true;
-        this.startGameButton.text = "🏁 END GAME";
+        // Game over - show quit option only
+        this.startGameButton.visible = false;
+        this.quitGameButton.visible = true;
+        this.quitGameButton.enabled = true;
+        this.quitGameButton.text = gameState === "GameWon" ? "🏆 CLAIM VICTORY" : "💀 END GAME";
         break;
+        
       default:
+        // Fallback - show start button
         this.startGameButton.enabled = true;
         this.startGameButton.text = "🎮 START";
+        this.startGameButton.visible = true;
         break;
     }
   }
@@ -780,6 +912,9 @@ export class MainScreen extends Container {
         this.connectButton.enabled = true;
         this.usernameLabel.visible = false;
         this.startGameButton.enabled = false;
+        this.pullOrbButton.enabled = false;
+        this.advanceLevelButton.enabled = false;
+        this.quitGameButton.enabled = false;
         this.giftRocksButton.enabled = false;
         this.clearMoonBagDataSubscription();
         break;
@@ -789,6 +924,9 @@ export class MainScreen extends Container {
         this.connectButton.enabled = false;
         this.usernameLabel.visible = false;
         this.giftRocksButton.enabled = false;
+        this.pullOrbButton.enabled = false;
+        this.advanceLevelButton.enabled = false;
+        this.quitGameButton.enabled = false;
         break;
 
       case ConnectionStatus.Connected: {
@@ -796,6 +934,7 @@ export class MainScreen extends Container {
         this.connectButton.enabled = false;
         this.startGameButton.enabled = true;
         this.giftRocksButton.enabled = true;
+        // Game action buttons will be enabled by game state logic
 
         // Show username or address
         const displayName = engine().wallet.getUserDisplayName();
@@ -820,6 +959,9 @@ export class MainScreen extends Container {
         this.connectButton.enabled = true;
         this.usernameLabel.visible = false;
         this.startGameButton.enabled = false;
+        this.pullOrbButton.enabled = false;
+        this.advanceLevelButton.enabled = false;
+        this.quitGameButton.enabled = false;
         this.giftRocksButton.enabled = false;
         console.error("Wallet connection error:", state.error);
         break;

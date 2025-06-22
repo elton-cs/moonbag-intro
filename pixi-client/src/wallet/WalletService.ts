@@ -333,6 +333,46 @@ export class WalletService {
   }
 
   /**
+   * Advance to the next level after completing current milestone
+   */
+  public async advanceToNextLevel(): Promise<{ transaction_hash: string }> {
+    const actionsContract = manifest.contracts.find(
+      (contract: { tag: string; address: string }) =>
+        contract.tag === "di-actions",
+    );
+
+    if (!actionsContract) {
+      throw new Error("Actions contract not found in manifest");
+    }
+
+    return this.executeTransaction({
+      contractAddress: actionsContract.address,
+      entrypoint: "advance_to_next_level",
+      calldata: [],
+    });
+  }
+
+  /**
+   * Quit the current game and cash out points to Moon Rocks
+   */
+  public async quitGame(): Promise<{ transaction_hash: string }> {
+    const actionsContract = manifest.contracts.find(
+      (contract: { tag: string; address: string }) =>
+        contract.tag === "di-actions",
+    );
+
+    if (!actionsContract) {
+      throw new Error("Actions contract not found in manifest");
+    }
+
+    return this.executeTransaction({
+      contractAddress: actionsContract.address,
+      entrypoint: "quit_game",
+      calldata: [],
+    });
+  }
+
+  /**
    * Update internal state and notify subscribers
    */
   private updateState(newState: Partial<WalletConnectionState>): void {
