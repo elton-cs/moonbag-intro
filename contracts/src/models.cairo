@@ -53,6 +53,7 @@ pub struct Game {
     pub cheddah: u32,
     pub current_level: u8,
     pub is_active: bool,
+    pub game_state: GameState,        // Current game state for progression
     pub orb_bag: Array<OrbType>,      // All orbs currently in bag
     pub orbs_drawn: Array<OrbType>,   // Track drawn orbs for bomb counter
 }
@@ -81,6 +82,15 @@ pub enum OrbType {
     SingleBomb,    // -1 health
     FivePoints,    // +5 points  
     Health,        // +1 health
+}
+
+// Game state enum for win/lose logic and level progression
+#[derive(Serde, Copy, Drop, Introspect, PartialEq)]
+pub enum GameState {
+    Active,        // Game in progress
+    LevelComplete, // Level completed, awaiting player choice
+    GameWon,       // All 7 levels completed
+    GameLost,      // Health = 0 or bag empty before milestone
 }
 
 #[generate_trait]

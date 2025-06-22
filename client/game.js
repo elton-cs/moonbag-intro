@@ -16,6 +16,23 @@ const ACTIVE_GAME_MODEL = 'di-ActiveGame';
 // Game constants
 const GAME_ENTRY_COST = 10;
 
+// Level progression constants (from PRD)
+const MILESTONE_POINTS = {
+  1: 12, 2: 18, 3: 28, 4: 44, 5: 66, 6: 94, 7: 130
+};
+
+const LEVEL_COSTS = {
+  1: 5, 2: 6, 3: 8, 4: 10, 5: 12, 6: 16, 7: 20
+};
+
+// Game state mapping (matches Cairo enum)
+const GAME_STATES = {
+  0: 'Active',
+  1: 'LevelComplete',
+  2: 'GameWon',
+  3: 'GameLost'
+};
+
 // Orb type mapping (matches simplified Cairo enum order)
 const ORB_TYPES = {
   0: 'SingleBomb',
@@ -108,6 +125,10 @@ function updateGameDisplay(game) {
   if (gameIdDisplay) {
     gameIdDisplay.textContent = `Game #${game.game_id.value}`;
   }
+
+  // Update level progress and game state UI
+  updateLevelProgress(game);
+  updateGameStateUI(game);
 }
 
 function updateMoonRocksDisplay(amount) {
@@ -184,6 +205,19 @@ function initGame(account, manifest) {
 
   document.getElementById('gift-moonrocks-button').onclick = async () => {
     await giftMoonRocks(account, manifest);
+  };
+
+  // Level progression button handlers
+  document.getElementById('advance-level-button').onclick = async () => {
+    await advanceToNextLevel(account, manifest);
+  };
+
+  document.getElementById('quit-game-button').onclick = async () => {
+    await quitGame(account, manifest);
+  };
+
+  document.getElementById('final-quit-button').onclick = async () => {
+    await quitGame(account, manifest);
   };
 }
 
@@ -285,6 +319,28 @@ async function pullOrb(account, manifest) {
   console.log('Pull orb transaction sent:', tx);
 }
 
+async function advanceToNextLevel(account, manifest) {
+  const tx = await account.execute({
+    contractAddress: manifest.contracts.find((contract) => contract.tag === ACTION_CONTRACT)
+      .address,
+    entrypoint: 'advance_to_next_level',
+    calldata: [],
+  });
+
+  console.log('Advance to next level transaction sent:', tx);
+}
+
+async function quitGame(account, manifest) {
+  const tx = await account.execute({
+    contractAddress: manifest.contracts.find((contract) => contract.tag === ACTION_CONTRACT)
+      .address,
+    entrypoint: 'quit_game',
+    calldata: [],
+  });
+
+  console.log('Quit game transaction sent:', tx);
+}
+
 function updateActiveGameDisplay(activeGame) {
   const hasActiveGame = activeGame.game_id.value > 0;
   
@@ -321,23 +377,69 @@ function updateOrbBagFromGame(game) {
   // Clear existing orbs
   orbBagDisplay.innerHTML = '';
   
-  // Parse orb_bag array from game model
+  console.log('Full game object for orb bag:', game);
+  console.log('Orb bag raw data:', game.orb_bag);
+  
+  // Parse orb_bag array from game model - check multiple possible data structures
+  let orbBag = null;
+  
   if (game.orb_bag && game.orb_bag.value && Array.isArray(game.orb_bag.value)) {
-    const orbBag = game.orb_bag.value;
-    
-    if (orbBag.length === 0) {
-      orbBagDisplay.innerHTML = '<div class="text-gray-400 text-center py-4">Orb bag is empty</div>';
-      return;
-    }
-    
+    orbBag = game.orb_bag.value;
+  } else if (game.orb_bag && Array.isArray(game.orb_bag)) {
+    orbBag = game.orb_bag;
+  } else if (game.orb_bag && game.orb_bag.data && Array.isArray(game.orb_bag.data)) {
+    orbBag = game.orb_bag.data;
+  }
+  
+  console.log('Parsed orb bag:', orbBag);
+  
+  if (orbBag && orbBag.length > 0) {
     // Count orbs by type for display
     const orbCounts = {};
-    orbBag.forEach(orbTypeValue => {
-      const orbType = ORB_TYPES[orbTypeValue];
+    
+    orbBag.forEach((orbTypeValue, index) => {
+      console.log(`Orb ${index}:`, orbTypeValue);
+      
+      // Handle Dojo enum structure: {type: 'enum', type_name: 'OrbType', value: {variant_name: 'SingleBomb', variant_index: 0}}
+      let actualValue = orbTypeValue;
+      
+      if (typeof orbTypeValue === 'object' && orbTypeValue.value !== undefined) {
+        console.log('Orb value object:', orbTypeValue.value);
+        console.log('Orb value object keys:', Object.keys(orbTypeValue.value));
+        
+        if (typeof orbTypeValue.value === 'object') {
+          if (orbTypeValue.value.variant_index !== undefined) {
+            // This is a Dojo enum - use the variant_index
+            actualValue = orbTypeValue.value.variant_index;
+          } else if (orbTypeValue.value.value !== undefined) {
+            actualValue = orbTypeValue.value.value;
+          } else {
+            // Check if it's a direct variant name mapping
+            const variantName = Object.keys(orbTypeValue.value)[0];
+            console.log('Variant name found:', variantName);
+            
+            // Map variant names to indices
+            const variantToIndex = {
+              'SingleBomb': 0,
+              'FivePoints': 1,
+              'Health': 2
+            };
+            actualValue = variantToIndex[variantName];
+          }
+        } else {
+          actualValue = orbTypeValue.value;
+        }
+      }
+      
+      const orbType = ORB_TYPES[actualValue];
+      console.log(`Mapped orb type for value ${actualValue}:`, orbType);
+      
       if (orbType) {
         orbCounts[orbType] = (orbCounts[orbType] || 0) + 1;
       }
     });
+    
+    console.log('Orb counts:', orbCounts);
     
     // Create display elements for each orb type
     Object.entries(orbCounts).forEach(([orbType, count]) => {
@@ -370,8 +472,133 @@ function updateOrbBagFromGame(game) {
   } else {
     orbBagDisplay.innerHTML = '<div class="text-gray-400 text-center py-4">No orbs in bag yet</div>';
   }
+}
+
+function updateLevelProgress(game) {
+  console.log('updateLevelProgress called with game:', game);
   
-  console.log('Orb bag updated:', game.orb_bag);
+  const currentLevel = game.current_level.value;
+  const currentPoints = game.points.value;
+  
+  // Handle Dojo enum structure for game_state
+  let gameStateValue = game.game_state.value;
+  console.log('Raw game_state.value:', gameStateValue);
+  
+  if (typeof gameStateValue === 'object') {
+    console.log('Game state object keys:', Object.keys(gameStateValue));
+    if (gameStateValue.variant_index !== undefined) {
+      gameStateValue = gameStateValue.variant_index;
+    } else if (gameStateValue.value !== undefined) {
+      gameStateValue = gameStateValue.value;
+    }
+  }
+  
+  const gameState = GAME_STATES[gameStateValue];
+  const milestonePoints = MILESTONE_POINTS[currentLevel];
+  
+  console.log(`Level: ${currentLevel}, Points: ${currentPoints}, Milestone: ${milestonePoints}, State: ${gameState} (parsed value: ${gameStateValue})`);
+  
+  const progressBar = document.getElementById('progress-bar');
+  const progressText = document.getElementById('progress-text');
+  const levelProgress = document.getElementById('level-progress');
+  
+  console.log('Progress UI elements found:', {
+    progressBar: !!progressBar,
+    progressText: !!progressText,
+    levelProgress: !!levelProgress
+  });
+  
+  if (progressBar && progressText && levelProgress) {
+    // Show progress bar during active gameplay
+    if (gameState === 'Active') {
+      levelProgress.style.display = 'block';
+      
+      const progressPercent = Math.min((currentPoints / milestonePoints) * 100, 100);
+      progressBar.style.width = `${progressPercent}%`;
+      progressText.textContent = `${currentPoints} / ${milestonePoints}`;
+      
+      console.log(`Progress updated: ${progressPercent}% (${currentPoints}/${milestonePoints})`);
+      
+      // Change color based on progress
+      if (progressPercent >= 100) {
+        progressBar.className = 'bg-green-500 h-2 rounded-full transition-all duration-300';
+      } else if (progressPercent >= 75) {
+        progressBar.className = 'bg-yellow-500 h-2 rounded-full transition-all duration-300';
+      } else {
+        progressBar.className = 'bg-blue-500 h-2 rounded-full transition-all duration-300';
+      }
+    } else {
+      levelProgress.style.display = 'none';
+      console.log('Progress bar hidden due to game state:', gameState);
+    }
+  } else {
+    console.log('Missing progress UI elements!');
+  }
+}
+
+function updateGameStateUI(game) {
+  // Handle Dojo enum structure for game_state
+  let gameStateValue = game.game_state.value;
+  if (typeof gameStateValue === 'object' && gameStateValue.variant_index !== undefined) {
+    gameStateValue = gameStateValue.variant_index;
+  }
+  const gameState = GAME_STATES[gameStateValue];
+  
+  const pullOrbButton = document.getElementById('pull-orb-button');
+  const levelCompleteActions = document.getElementById('level-complete-actions');
+  const gameOverActions = document.getElementById('game-over-actions');
+  const gameOverMessage = document.getElementById('game-over-message');
+  const advanceLevelButton = document.getElementById('advance-level-button');
+  
+  // Hide all action sections first
+  if (levelCompleteActions) levelCompleteActions.style.display = 'none';
+  if (gameOverActions) gameOverActions.style.display = 'none';
+  
+  switch (gameState) {
+    case 'Active':
+      if (pullOrbButton) pullOrbButton.disabled = false;
+      break;
+      
+    case 'LevelComplete':
+      if (pullOrbButton) pullOrbButton.disabled = true;
+      if (levelCompleteActions) {
+        levelCompleteActions.style.display = 'block';
+        
+        // Check if we can advance to next level (not at max level)
+        const currentLevel = game.current_level.value;
+        const nextLevelCost = LEVEL_COSTS[currentLevel + 1];
+        if (advanceLevelButton && currentLevel < 7 && nextLevelCost) {
+          advanceLevelButton.textContent = `⬆️ Advance to Level ${currentLevel + 1} (${nextLevelCost} Moon Rocks)`;
+        } else if (advanceLevelButton) {
+          advanceLevelButton.style.display = 'none';
+        }
+      }
+      break;
+      
+    case 'GameWon':
+      if (pullOrbButton) pullOrbButton.disabled = true;
+      if (gameOverActions) {
+        gameOverActions.style.display = 'block';
+        if (gameOverMessage) {
+          gameOverMessage.textContent = '🎉 Congratulations! You completed all 7 levels!';
+          gameOverMessage.className = 'text-center font-semibold mb-2 text-green-400';
+        }
+      }
+      break;
+      
+    case 'GameLost':
+      if (pullOrbButton) pullOrbButton.disabled = true;
+      if (gameOverActions) {
+        gameOverActions.style.display = 'block';
+        if (gameOverMessage) {
+          gameOverMessage.textContent = '💀 Game Over - Better luck next time!';
+          gameOverMessage.className = 'text-center font-semibold mb-2 text-red-400';
+        }
+      }
+      break;
+  }
+  
+  console.log('Game state UI updated:', gameState);
 }
 
 export { initGame, updateFromEntityData };

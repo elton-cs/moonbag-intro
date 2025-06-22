@@ -6,6 +6,8 @@ pub trait IActions<T> {
     fn spawn(ref self: T);
     fn spawn_game(ref self: T);
     fn pull_orb(ref self: T);
+    fn advance_to_next_level(ref self: T);
+    fn quit_game(ref self: T);
     fn gift_moonrocks(ref self: T);
     fn move(ref self: T, direction: Direction);
     fn move_random(ref self: T);
@@ -26,7 +28,7 @@ pub enum Source {
 #[dojo::contract]
 pub mod actions {
     use super::{IActions, IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
-    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter, MoonRocks, OrbType, ActiveGame};
+    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter, MoonRocks, OrbType, ActiveGame, GameState};
 
     use core::num::traits::SaturatingSub;
     use dojo::model::ModelStorage;
@@ -46,6 +48,49 @@ pub mod actions {
     // Moon Rocks currency constants
     pub const GAME_ENTRY_COST: u32 = 10; // Moon rocks cost per game
     pub const GIFT_AMOUNT: u32 = 500;    // Gift for new players
+
+    // Level progression constants from PRD
+    pub const MAX_LEVEL: u8 = 7;
+
+    // Helper functions for level data (using 0-based indexing for Cairo match requirements)
+    fn get_milestone_points(level: u8) -> u32 {
+        match level - 1 {
+            0 => 12,  // Level 1
+            1 => 18,  // Level 2
+            2 => 28,  // Level 3
+            3 => 44,  // Level 4
+            4 => 66,  // Level 5
+            5 => 94,  // Level 6
+            6 => 130, // Level 7
+            _ => 0,
+        }
+    }
+
+    fn get_level_cost(level: u8) -> u32 {
+        match level - 1 {
+            0 => 5,   // Level 1
+            1 => 6,   // Level 2
+            2 => 8,   // Level 3
+            3 => 10,  // Level 4
+            4 => 12,  // Level 5
+            5 => 16,  // Level 6
+            6 => 20,  // Level 7
+            _ => 0,
+        }
+    }
+
+    fn get_cheddah_reward(level: u8) -> u32 {
+        match level - 1 {
+            0 => 10,  // Level 1
+            1 => 15,  // Level 2
+            2 => 20,  // Level 3
+            3 => 25,  // Level 4
+            4 => 30,  // Level 5
+            5 => 40,  // Level 6
+            6 => 50,  // Level 7
+            _ => 0,
+        }
+    }
 
     // Pseudo-random function for orb selection
     fn get_pseudo_random(player: starknet::ContractAddress, game_id: u32, max_value: u32) -> u32 {
@@ -136,6 +181,7 @@ pub mod actions {
                 cheddah: INIT_CHEDDAH,
                 current_level: INIT_LEVEL,
                 is_active: true,
+                game_state: GameState::Active,
                 orb_bag: starting_orb_bag,
                 orbs_drawn: array![],
             };
@@ -210,8 +256,12 @@ pub mod actions {
             new_orbs_drawn.append(selected_orb);
             game.orbs_drawn = new_orbs_drawn;
 
-            // Check for game over conditions
+            // Check win/lose conditions
+            let milestone_points = get_milestone_points(game.current_level);
+            
             if game.health == 0 || game.orb_bag.len() == 0 {
+                // Loss condition: health depleted or bag empty before milestone
+                game.game_state = GameState::GameLost;
                 game.is_active = false;
                 // Clear active game tracking
                 let cleared_active_game = ActiveGame {
@@ -219,10 +269,108 @@ pub mod actions {
                     game_id: 0,
                 };
                 world.write_model(@cleared_active_game);
+            } else if game.points >= milestone_points {
+                // Win condition: milestone reached
+                if game.current_level == MAX_LEVEL {
+                    // Completed final level - game won!
+                    game.game_state = GameState::GameWon;
+                    game.is_active = false;
+                    // Clear active game tracking
+                    let cleared_active_game = ActiveGame {
+                        player,
+                        game_id: 0,
+                    };
+                    world.write_model(@cleared_active_game);
+                } else {
+                    // Level completed - await player choice
+                    game.game_state = GameState::LevelComplete;
+                    // Award Cheddah for level completion
+                    game.cheddah += get_cheddah_reward(game.current_level);
+                }
             }
 
             // Write updated game state
             world.write_model(@game);
+        }
+
+        fn advance_to_next_level(ref self: ContractState) {
+            let mut world = self.world_default();
+            let player = get_caller_address();
+
+            // Get active game for this player
+            let active_game: ActiveGame = world.read_model(player);
+            assert(active_game.game_id > 0, 'No active game');
+
+            // Get the active game data
+            let mut game: Game = world.read_model((player, active_game.game_id));
+            assert(game.game_state == GameState::LevelComplete, 'Level not completed');
+
+            // Check player has sufficient moon rocks for next level
+            let next_level = game.current_level + 1;
+            assert(next_level <= MAX_LEVEL, 'Already at max level');
+            
+            let level_cost = get_level_cost(next_level);
+            let mut moon_rocks: MoonRocks = world.read_model(player);
+            assert(moon_rocks.amount >= level_cost, 'Insufficient moon rocks');
+
+            // Deduct level cost
+            moon_rocks.amount -= level_cost;
+            world.write_model(@moon_rocks);
+
+            // Advance to next level
+            game.current_level = next_level;
+            game.game_state = GameState::Active;
+            game.multiplier = INIT_MULTIPLIER; // Reset multiplier between levels
+            game.orbs_drawn = array![]; // Clear drawn orbs for new level
+
+            // Refill orb bag for new level (using same starting orbs for now)
+            let mut new_orb_bag = array![];
+            new_orb_bag.append(OrbType::SingleBomb);
+            new_orb_bag.append(OrbType::SingleBomb);
+            new_orb_bag.append(OrbType::FivePoints);
+            new_orb_bag.append(OrbType::FivePoints);
+            new_orb_bag.append(OrbType::FivePoints);
+            new_orb_bag.append(OrbType::Health);
+            game.orb_bag = new_orb_bag;
+
+            // Write updated game state
+            world.write_model(@game);
+        }
+
+        fn quit_game(ref self: ContractState) {
+            let mut world = self.world_default();
+            let player = get_caller_address();
+
+            // Get active game for this player
+            let active_game: ActiveGame = world.read_model(player);
+            assert(active_game.game_id > 0, 'No active game');
+
+            // Get the active game data
+            let mut game: Game = world.read_model((player, active_game.game_id));
+            assert(
+                game.game_state == GameState::LevelComplete || 
+                game.game_state == GameState::GameWon ||
+                game.game_state == GameState::GameLost, 
+                'Cannot quit active game'
+            );
+
+            // Convert points to Moon Rocks (1:1 ratio per PRD)
+            let mut moon_rocks: MoonRocks = world.read_model(player);
+            moon_rocks.amount += game.points;
+            world.write_model(@moon_rocks);
+
+            // End the game
+            game.is_active = false;
+            
+            // Clear active game tracking
+            let cleared_active_game = ActiveGame {
+                player,
+                game_id: 0,
+            };
+
+            // Write final state
+            world.write_model(@game);
+            world.write_model(@cleared_active_game);
         }
 
         fn gift_moonrocks(ref self: ContractState) {

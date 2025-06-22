@@ -35,6 +35,16 @@ const controllerOpts = {
             description: 'Draw a random orb from your bag and apply its effects',
           },
           {
+            name: 'Advance to Next Level',
+            entrypoint: 'advance_to_next_level',
+            description: 'Progress to the next level after completing current milestone',
+          },
+          {
+            name: 'Quit Game',
+            entrypoint: 'quit_game',
+            description: 'End the current game and convert points to Moon Rocks',
+          },
+          {
             name: 'Gift Moon Rocks',
             entrypoint: 'gift_moonrocks',
             description: 'Receive 500 Moon Rocks for new players',
