@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0xea420dc88e8c7f21a094d28509c1dfd79b746a618dff2c6cdc65ac7af14463",
-      "class_hash": "0x4c604419e66c221029b5b5c8a04c99a062c30ce5254e452e7cdf006be6bd4b4",
+      "address": "0x1c716e88995cd6d2fe7a142c3bdf28cb8af9d550ee4ff0478b5fd71c5acae3a",
+      "class_hash": "0x4c6fc25c48399ec088e1266e638a312c61a3ec83546db36340b7efad0bec985",
       "abi": [
         {
           "type": "impl",
@@ -1586,7 +1586,7 @@
   "models": [
     {
       "members": [],
-      "class_hash": "0x482fe719702bf9ac8c2f761bd94445b8cd94ab82131b9e789817e8d396709ee",
+      "class_hash": "0x1ef4e91f6ec67dca910c64785ec937ded3f000b93878be75d859dd0b075424f",
       "tag": "di-Game",
       "selector": "0x2d80900338aad8f8000d3bdec178807b4e9c224d4211d843b6616482acb5aae"
     },

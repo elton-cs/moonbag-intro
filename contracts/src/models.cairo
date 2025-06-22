@@ -40,7 +40,7 @@ pub struct MoonRocks {
 }
 
 // Game model for Moon Bag - represents a single playable game instance
-#[derive(Copy, Drop, Serde)]
+#[derive(Drop, Serde)]
 #[dojo::model]
 pub struct Game {
     #[key]
@@ -53,6 +53,8 @@ pub struct Game {
     pub cheddah: u32,
     pub current_level: u8,
     pub is_active: bool,
+    pub orb_bag: Array<OrbType>,      // All orbs currently in bag
+    pub orbs_drawn: Array<OrbType>,   // Track drawn orbs for bomb counter
 }
 
 // Counter model to track next game ID for each player
@@ -62,6 +64,14 @@ pub struct GameCounter {
     #[key]
     pub player: ContractAddress,
     pub next_game_id: u32,
+}
+
+// Orb types for Moon Bag game - simple enum for array storage
+#[derive(Serde, Copy, Drop, Introspect, PartialEq)]
+pub enum OrbType {
+    SingleBomb,    // -1 health
+    FivePoints,    // +5 points  
+    Health,        // +1 health
 }
 
 #[generate_trait]

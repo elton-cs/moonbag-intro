@@ -15,6 +15,20 @@ const MOON_ROCKS_MODEL = 'di-MoonRocks';
 // Game constants
 const GAME_ENTRY_COST = 10;
 
+// Orb type mapping (matches simplified Cairo enum order)
+const ORB_TYPES = {
+  0: 'SingleBomb',
+  1: 'FivePoints',  
+  2: 'Health'
+};
+
+// Orb display names and effects
+const ORB_INFO = {
+  'SingleBomb': { name: 'Single Bomb', effect: '-1 Health', emoji: '💣' },
+  'FivePoints': { name: 'Five Points', effect: '+5 Points', emoji: '⭐' },
+  'Health': { name: 'Health', effect: '+1 Health', emoji: '❤️' }
+};
+
 function updateFromEntityData(entity) {
   if (entity.models) {
     if (entity.models[POSITION_MODEL]) {
@@ -30,6 +44,9 @@ function updateFromEntityData(entity) {
     if (entity.models[GAME_MODEL]) {
       const game = entity.models[GAME_MODEL];
       updateGameDisplay(game);
+      
+      // Update orb bag from game model arrays
+      updateOrbBagFromGame(game);
     }
 
     if (entity.models[MOON_ROCKS_MODEL]) {
@@ -245,6 +262,66 @@ async function giftMoonRocks(account, manifest) {
   });
 
   console.log('Moon rocks gift transaction sent:', tx);
+}
+
+function updateOrbBagFromGame(game) {
+  const orbBagDisplay = document.getElementById('orb-bag-display');
+  if (!orbBagDisplay) return;
+  
+  // Clear existing orbs
+  orbBagDisplay.innerHTML = '';
+  
+  // Parse orb_bag array from game model
+  if (game.orb_bag && game.orb_bag.value && Array.isArray(game.orb_bag.value)) {
+    const orbBag = game.orb_bag.value;
+    
+    if (orbBag.length === 0) {
+      orbBagDisplay.innerHTML = '<div class="text-gray-400 text-center py-4">Orb bag is empty</div>';
+      return;
+    }
+    
+    // Count orbs by type for display
+    const orbCounts = {};
+    orbBag.forEach(orbTypeValue => {
+      const orbType = ORB_TYPES[orbTypeValue];
+      if (orbType) {
+        orbCounts[orbType] = (orbCounts[orbType] || 0) + 1;
+      }
+    });
+    
+    // Create display elements for each orb type
+    Object.entries(orbCounts).forEach(([orbType, count]) => {
+      const orbInfo = ORB_INFO[orbType];
+      if (orbInfo) {
+        const orbElement = document.createElement('div');
+        orbElement.className = 'orb-item p-3 border border-gray-600 rounded-lg text-sm bg-gray-700/50';
+        
+        orbElement.innerHTML = `
+          <div class="flex items-center space-x-3">
+            <span class="text-2xl">${orbInfo.emoji}</span>
+            <div class="flex-1">
+              <div class="font-semibold text-white">${orbInfo.name}</div>
+              <div class="text-gray-400 text-xs">${orbInfo.effect}</div>
+            </div>
+            <div class="text-blue-400 font-bold text-lg">x${count}</div>
+          </div>
+        `;
+        
+        orbBagDisplay.appendChild(orbElement);
+      }
+    });
+    
+    // Add total count display
+    const totalElement = document.createElement('div');
+    totalElement.className = 'text-center text-gray-300 text-sm mt-2 pt-2 border-t border-gray-600';
+    totalElement.textContent = `Total Orbs: ${orbBag.length}`;
+    orbBagDisplay.appendChild(totalElement);
+    
+  } else {
+    orbBagDisplay.innerHTML = '<div class="text-gray-400 text-center py-4">No orbs in bag yet</div>';
+  }
+  
+  console.log('Orb bag updated:', game.orb_bag);
 }
 
 export { initGame, updateFromEntityData };

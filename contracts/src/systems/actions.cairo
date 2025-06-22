@@ -25,7 +25,7 @@ pub enum Source {
 #[dojo::contract]
 pub mod actions {
     use super::{IActions, IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
-    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter, MoonRocks};
+    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter, MoonRocks, OrbType};
 
     use core::num::traits::SaturatingSub;
     use dojo::model::ModelStorage;
@@ -91,6 +91,15 @@ pub mod actions {
 
             let current_game_id = game_counter.next_game_id;
 
+            // Create starting orb bag with PRD starting orbs
+            let mut starting_orb_bag = array![];
+            starting_orb_bag.append(OrbType::SingleBomb);
+            starting_orb_bag.append(OrbType::SingleBomb);
+            starting_orb_bag.append(OrbType::FivePoints);
+            starting_orb_bag.append(OrbType::FivePoints);
+            starting_orb_bag.append(OrbType::FivePoints);
+            starting_orb_bag.append(OrbType::Health);
+
             // Create new game instance with PRD starting values
             let new_game = Game {
                 player,
@@ -101,6 +110,8 @@ pub mod actions {
                 cheddah: INIT_CHEDDAH,
                 current_level: INIT_LEVEL,
                 is_active: true,
+                orb_bag: starting_orb_bag,
+                orbs_drawn: array![],
             };
 
             // Increment the counter for next game
