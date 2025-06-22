@@ -1,11 +1,5 @@
 import { apolloClient } from "../apollo-client";
 import {
-  GET_PLAYER_STATE,
-  GET_ALL_POSITIONS,
-  GET_ALL_MOVES,
-  SUBSCRIBE_ENTITY_UPDATES,
-} from "../queries/player";
-import {
   GET_GAME_MODELS,
   GET_MOON_ROCKS_MODELS,
   GET_ACTIVE_GAME_MODELS,
@@ -13,18 +7,11 @@ import {
   GET_ORB_BAG_SLOT_MODELS,
   GET_ALL_MOON_BAG_DATA,
   GET_ALL_MOON_BAG_DATA_GLOBAL,
-  SUBSCRIBE_MOON_BAG_UPDATES,
   SUBSCRIBE_MOON_BAG_PLAYER_UPDATES,
   SUBSCRIBE_MOON_ROCKS_UPDATES,
   SUBSCRIBE_GAME_UPDATES,
-  SUBSCRIBE_ORB_BAG_UPDATES,
-  SUBSCRIBE_ACTIVE_GAME_UPDATES,
 } from "../queries/moonbag";
 import type {
-  GetPlayerStateResult,
-  PositionEntity,
-  MovesEntity,
-  EntityUpdate,
   MoonBagData,
   GameModel,
   MoonRocksModel,
@@ -32,144 +19,14 @@ import type {
   GameCounterModel,
   OrbBagSlotModel,
   GetMoonBagDataResult,
-  GetGameModelsResult,
-  GetMoonRocksModelsResult,
-  GetActiveGameModelsResult,
-  GetGameCounterModelsResult,
-  GetOrbBagSlotModelsResult,
+  GameEntity,
+  MoonRocksEntity,
+  ActiveGameEntity,
+  GameCounterEntity,
 } from "../types";
 
 export class GameDataService {
   private subscriptions: Map<string, { unsubscribe: () => void }> = new Map();
-
-  /**
-   * Get player state (position and moves) by player address
-   */
-  async getPlayerState(playerAddress: string): Promise<GetPlayerStateResult> {
-    try {
-      const result = await apolloClient.query({
-        query: GET_PLAYER_STATE,
-        variables: { player: playerAddress },
-        fetchPolicy: "cache-first",
-      });
-
-      const position = result.data.position?.edges[0]?.node;
-      const moves = result.data.moves?.edges[0]?.node;
-
-      return {
-        position,
-        moves,
-      };
-    } catch (error) {
-      console.error("Error fetching player state:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all player positions
-   */
-  async getAllPositions(): Promise<PositionEntity[]> {
-    try {
-      const result = await apolloClient.query({
-        query: GET_ALL_POSITIONS,
-        fetchPolicy: "cache-first",
-      });
-
-      return (
-        result.data.positionModels?.edges?.map(
-          (edge: { node: PositionEntity }) => edge.node,
-        ) || []
-      );
-    } catch (error) {
-      console.error("Error fetching all positions:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all player moves
-   */
-  async getAllMoves(): Promise<MovesEntity[]> {
-    try {
-      const result = await apolloClient.query({
-        query: GET_ALL_MOVES,
-        fetchPolicy: "cache-first",
-      });
-
-      return (
-        result.data.movesModels?.edges?.map(
-          (edge: { node: MovesEntity }) => edge.node,
-        ) || []
-      );
-    } catch (error) {
-      console.error("Error fetching all moves:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Subscribe to entity updates for real-time data
-   */
-  subscribeToEntityUpdates(
-    callback: (update: EntityUpdate) => void,
-    subscriptionId: string = "default",
-  ): () => void {
-    try {
-      const subscription = apolloClient
-        .subscribe({
-          query: SUBSCRIBE_ENTITY_UPDATES,
-        })
-        .subscribe({
-          next: (result) => {
-            if (result.data?.entityUpdated) {
-              callback(result.data.entityUpdated);
-            }
-          },
-          error: (error) => {
-            console.error("Subscription error:", error);
-          },
-        });
-
-      this.subscriptions.set(subscriptionId, subscription);
-
-      // Return unsubscribe function
-      return () => {
-        subscription.unsubscribe();
-        this.subscriptions.delete(subscriptionId);
-      };
-    } catch (error) {
-      console.error("Error setting up subscription:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Watch player state changes with real-time updates
-   */
-  watchPlayerState(
-    playerAddress: string,
-    callback: (state: GetPlayerStateResult) => void,
-    subscriptionId?: string,
-  ): () => void {
-    // First, get initial data
-    this.getPlayerState(playerAddress).then(callback).catch(console.error);
-
-    // Then subscribe to updates
-    return this.subscribeToEntityUpdates(
-      async () => {
-        // Re-fetch player state when entities are updated
-        // This is a simple approach - could be optimized to parse the update directly
-        try {
-          const newState = await this.getPlayerState(playerAddress);
-          callback(newState);
-        } catch (error) {
-          console.error("Error updating player state:", error);
-        }
-      },
-      subscriptionId || `player-${playerAddress}`,
-    );
-  }
 
   // Moon Bag specific methods
 
@@ -210,42 +67,68 @@ export class GameDataService {
 
       // Group data by player
       const playerDataMap = new Map<string, MoonBagData>();
-      
+
       // Process games
-      result.data.diGameModels?.edges.forEach((edge: any) => {
+      result.data.diGameModels?.edges.forEach((edge: { node: GameEntity }) => {
         const game = edge.node;
         if (!playerDataMap.has(game.player)) {
-          playerDataMap.set(game.player, { games: [], moonRocks: undefined, activeGame: undefined, gameCounter: undefined });
+          playerDataMap.set(game.player, {
+            games: [],
+            moonRocks: undefined,
+            activeGame: undefined,
+            gameCounter: undefined,
+          });
         }
         playerDataMap.get(game.player)!.games.push(game);
       });
 
       // Process moon rocks
-      result.data.diMoonRocksModels?.edges.forEach((edge: any) => {
-        const moonRocks = edge.node;
-        if (!playerDataMap.has(moonRocks.player)) {
-          playerDataMap.set(moonRocks.player, { games: [], moonRocks: undefined, activeGame: undefined, gameCounter: undefined });
-        }
-        playerDataMap.get(moonRocks.player)!.moonRocks = moonRocks;
-      });
+      result.data.diMoonRocksModels?.edges.forEach(
+        (edge: { node: MoonRocksEntity }) => {
+          const moonRocks = edge.node;
+          if (!playerDataMap.has(moonRocks.player)) {
+            playerDataMap.set(moonRocks.player, {
+              games: [],
+              moonRocks: undefined,
+              activeGame: undefined,
+              gameCounter: undefined,
+            });
+          }
+          playerDataMap.get(moonRocks.player)!.moonRocks = moonRocks;
+        },
+      );
 
       // Process active games
-      result.data.diActiveGameModels?.edges.forEach((edge: any) => {
-        const activeGame = edge.node;
-        if (!playerDataMap.has(activeGame.player)) {
-          playerDataMap.set(activeGame.player, { games: [], moonRocks: undefined, activeGame: undefined, gameCounter: undefined });
-        }
-        playerDataMap.get(activeGame.player)!.activeGame = activeGame;
-      });
+      result.data.diActiveGameModels?.edges.forEach(
+        (edge: { node: ActiveGameEntity }) => {
+          const activeGame = edge.node;
+          if (!playerDataMap.has(activeGame.player)) {
+            playerDataMap.set(activeGame.player, {
+              games: [],
+              moonRocks: undefined,
+              activeGame: undefined,
+              gameCounter: undefined,
+            });
+          }
+          playerDataMap.get(activeGame.player)!.activeGame = activeGame;
+        },
+      );
 
       // Process game counters
-      result.data.diGameCounterModels?.edges.forEach((edge: any) => {
-        const gameCounter = edge.node;
-        if (!playerDataMap.has(gameCounter.player)) {
-          playerDataMap.set(gameCounter.player, { games: [], moonRocks: undefined, activeGame: undefined, gameCounter: undefined });
-        }
-        playerDataMap.get(gameCounter.player)!.gameCounter = gameCounter;
-      });
+      result.data.diGameCounterModels?.edges.forEach(
+        (edge: { node: GameCounterEntity }) => {
+          const gameCounter = edge.node;
+          if (!playerDataMap.has(gameCounter.player)) {
+            playerDataMap.set(gameCounter.player, {
+              games: [],
+              moonRocks: undefined,
+              activeGame: undefined,
+              gameCounter: undefined,
+            });
+          }
+          playerDataMap.get(gameCounter.player)!.gameCounter = gameCounter;
+        },
+      );
 
       const allPlayerData = Array.from(playerDataMap.values());
       console.log("🌍 Global Moon Bag Data (Parsed by Player):", allPlayerData);
@@ -260,7 +143,9 @@ export class GameDataService {
   /**
    * Get player's moon rocks
    */
-  async getPlayerMoonRocks(playerAddress: string): Promise<MoonRocksModel | undefined> {
+  async getPlayerMoonRocks(
+    playerAddress: string,
+  ): Promise<MoonRocksModel | undefined> {
     try {
       const result = await apolloClient.query({
         query: GET_MOON_ROCKS_MODELS,
@@ -283,7 +168,9 @@ export class GameDataService {
   /**
    * Get player's active game
    */
-  async getPlayerActiveGame(playerAddress: string): Promise<ActiveGameModel | undefined> {
+  async getPlayerActiveGame(
+    playerAddress: string,
+  ): Promise<ActiveGameModel | undefined> {
     try {
       const result = await apolloClient.query({
         query: GET_ACTIVE_GAME_MODELS,
@@ -316,7 +203,10 @@ export class GameDataService {
 
       console.log("🎯 Game History Data (Raw):", result.data);
 
-      const games = result.data.diGameModels?.edges?.map((edge: any) => edge.node) || [];
+      const games =
+        result.data.diGameModels?.edges?.map(
+          (edge: { node: GameEntity }) => edge.node,
+        ) || [];
       console.log("🎯 Game History Data (Parsed):", games);
 
       return games;
@@ -329,7 +219,9 @@ export class GameDataService {
   /**
    * Get player's game counter
    */
-  async getPlayerGameCounter(playerAddress: string): Promise<GameCounterModel | undefined> {
+  async getPlayerGameCounter(
+    playerAddress: string,
+  ): Promise<GameCounterModel | undefined> {
     try {
       const result = await apolloClient.query({
         query: GET_GAME_COUNTER_MODELS,
@@ -352,7 +244,9 @@ export class GameDataService {
   /**
    * Get player's orb bag slots
    */
-  async getPlayerOrbBagSlots(playerAddress: string): Promise<OrbBagSlotModel[]> {
+  async getPlayerOrbBagSlots(
+    playerAddress: string,
+  ): Promise<OrbBagSlotModel[]> {
     try {
       const result = await apolloClient.query({
         query: GET_ORB_BAG_SLOT_MODELS,
@@ -362,7 +256,10 @@ export class GameDataService {
 
       console.log("🎒 Orb Bag Slots Data (Raw):", result.data);
 
-      const orbBagSlots = result.data.diOrbBagSlotModels?.edges?.map((edge: any) => edge.node) || [];
+      const orbBagSlots =
+        result.data.diOrbBagSlotModels?.edges?.map(
+          (edge: { node: OrbBagSlotModel }) => edge.node,
+        ) || [];
       console.log("🎒 Orb Bag Slots Data (Parsed):", orbBagSlots);
 
       return orbBagSlots;
@@ -400,8 +297,10 @@ export class GameDataService {
     subscriptionId: string = "default",
   ): () => void {
     try {
-      console.log(`🔔 Setting up Moon Bag WebSocket subscription for player: ${playerAddress}`);
-      
+      console.log(
+        `🔔 Setting up Moon Bag WebSocket subscription for player: ${playerAddress}`,
+      );
+
       const subscription = apolloClient
         .subscribe({
           query: SUBSCRIBE_MOON_BAG_PLAYER_UPDATES,
@@ -410,26 +309,44 @@ export class GameDataService {
         .subscribe({
           next: (result) => {
             if (result.data) {
-              console.log("🔔 REAL-TIME UPDATE - Raw Moon Bag Data:", result.data);
-              
+              console.log(
+                "🔔 REAL-TIME UPDATE - Raw Moon Bag Data:",
+                result.data,
+              );
+
               // Parse the subscription data
               const parsedData = this.parseMoonBagData(result.data);
-              console.log("🔔 REAL-TIME UPDATE - Parsed Moon Bag Data:", parsedData);
-              
+              console.log(
+                "🔔 REAL-TIME UPDATE - Parsed Moon Bag Data:",
+                parsedData,
+              );
+
               // Log individual data types for detailed tracking
               if (parsedData.moonRocks) {
-                console.log("🔔 REAL-TIME UPDATE - Moon Rocks:", parsedData.moonRocks);
+                console.log(
+                  "🔔 REAL-TIME UPDATE - Moon Rocks:",
+                  parsedData.moonRocks,
+                );
               }
               if (parsedData.activeGame) {
-                console.log("🔔 REAL-TIME UPDATE - Active Game:", parsedData.activeGame);
+                console.log(
+                  "🔔 REAL-TIME UPDATE - Active Game:",
+                  parsedData.activeGame,
+                );
               }
               if (parsedData.games.length > 0) {
-                console.log("🔔 REAL-TIME UPDATE - Game History:", parsedData.games);
+                console.log(
+                  "🔔 REAL-TIME UPDATE - Game History:",
+                  parsedData.games,
+                );
               }
               if (parsedData.gameCounter) {
-                console.log("🔔 REAL-TIME UPDATE - Game Counter:", parsedData.gameCounter);
+                console.log(
+                  "🔔 REAL-TIME UPDATE - Game Counter:",
+                  parsedData.gameCounter,
+                );
               }
-              
+
               callback(parsedData);
             }
           },
@@ -442,7 +359,9 @@ export class GameDataService {
 
       // Return unsubscribe function
       return () => {
-        console.log(`🔕 Unsubscribing from Moon Bag updates: ${subscriptionId}`);
+        console.log(
+          `🔕 Unsubscribing from Moon Bag updates: ${subscriptionId}`,
+        );
         subscription.unsubscribe();
         this.subscriptions.delete(subscriptionId);
       };
@@ -461,8 +380,10 @@ export class GameDataService {
     subscriptionId: string = "moon-rocks",
   ): () => void {
     try {
-      console.log(`🔔 Setting up Moon Rocks WebSocket subscription for player: ${playerAddress}`);
-      
+      console.log(
+        `🔔 Setting up Moon Rocks WebSocket subscription for player: ${playerAddress}`,
+      );
+
       const subscription = apolloClient
         .subscribe({
           query: SUBSCRIBE_MOON_ROCKS_UPDATES,
@@ -484,7 +405,9 @@ export class GameDataService {
       this.subscriptions.set(subscriptionId, subscription);
 
       return () => {
-        console.log(`🔕 Unsubscribing from Moon Rocks updates: ${subscriptionId}`);
+        console.log(
+          `🔕 Unsubscribing from Moon Rocks updates: ${subscriptionId}`,
+        );
         subscription.unsubscribe();
         this.subscriptions.delete(subscriptionId);
       };
@@ -503,8 +426,10 @@ export class GameDataService {
     subscriptionId: string = "games",
   ): () => void {
     try {
-      console.log(`🔔 Setting up Game Updates WebSocket subscription for player: ${playerAddress}`);
-      
+      console.log(
+        `🔔 Setting up Game Updates WebSocket subscription for player: ${playerAddress}`,
+      );
+
       const subscription = apolloClient
         .subscribe({
           query: SUBSCRIBE_GAME_UPDATES,
@@ -513,7 +438,10 @@ export class GameDataService {
         .subscribe({
           next: (result) => {
             if (result.data?.diGameModels) {
-              const games = result.data.diGameModels?.edges?.map((edge: any) => edge.node) || [];
+              const games =
+                result.data.diGameModels?.edges?.map(
+                  (edge: { node: GameEntity }) => edge.node,
+                ) || [];
               console.log("🔔 REAL-TIME UPDATE - Game History Only:", games);
               callback(games);
             }
@@ -543,7 +471,7 @@ export class GameDataService {
     try {
       // Clear Apollo cache for this player's data to ensure fresh fetch
       await apolloClient.clearStore();
-      
+
       const result = await apolloClient.query({
         query: GET_ALL_MOON_BAG_DATA,
         variables: { player: playerAddress },
@@ -570,19 +498,21 @@ export class GameDataService {
     playerAddress: string,
     callback: (data: MoonBagData) => void,
     maxAttempts: number = 20, // 10 seconds at 500ms intervals
-    intervalMs: number = 500
+    intervalMs: number = 500,
   ): Promise<void> {
-    console.log(`🔄 Starting polling for ${maxAttempts} attempts every ${intervalMs}ms`);
-    
+    console.log(
+      `🔄 Starting polling for ${maxAttempts} attempts every ${intervalMs}ms`,
+    );
+
     let attempts = 0;
     let lastDataHash: string | null = null;
-    
+
     const poll = async (): Promise<void> => {
       attempts++;
-      
+
       try {
         const freshData = await this.refetchMoonBagData(playerAddress);
-        
+
         // Create a simple hash of the data to detect changes
         const currentDataHash = JSON.stringify({
           moonRocks: freshData.moonRocks?.amount || 0,
@@ -590,39 +520,38 @@ export class GameDataService {
           health: freshData.games[0]?.health || 0,
           points: freshData.games[0]?.points || 0,
           cheddah: freshData.games[0]?.cheddah || 0,
-          orbCount: freshData.orbBagSlots?.length || 0
+          orbCount: freshData.orbBagSlots?.length || 0,
         });
-        
+
         // If this is the first poll or data has changed, update UI
         if (lastDataHash === null || currentDataHash !== lastDataHash) {
           console.log(`🔄 Data changed on attempt ${attempts}, updating UI`);
           callback(freshData);
           lastDataHash = currentDataHash;
-          
+
           // Stop polling if we detect meaningful changes
           if (lastDataHash !== null && attempts > 1) {
             console.log("✅ Polling stopped - data changes detected");
             return;
           }
         }
-        
+
         // Continue polling if we haven't reached max attempts
         if (attempts < maxAttempts) {
           setTimeout(poll, intervalMs);
         } else {
           console.log("⏱️ Polling stopped - max attempts reached");
         }
-        
       } catch (error) {
         console.error(`❌ Polling attempt ${attempts} failed:`, error);
-        
+
         // Continue polling on error unless we've reached max attempts
         if (attempts < maxAttempts) {
           setTimeout(poll, intervalMs);
         }
       }
     };
-    
+
     // Start first poll immediately
     poll();
   }
@@ -635,7 +564,8 @@ export class GameDataService {
     const moonRocks = data.diMoonRocksModels?.edges[0]?.node;
     const activeGame = data.diActiveGameModels?.edges[0]?.node;
     const gameCounter = data.diGameCounterModels?.edges[0]?.node;
-    const orbBagSlots = data.diOrbBagSlotModels?.edges?.map((edge) => edge.node) || [];
+    const orbBagSlots =
+      data.diOrbBagSlotModels?.edges?.map((edge) => edge.node) || [];
 
     return {
       games,
@@ -654,31 +584,5 @@ export class GameDataService {
       subscription.unsubscribe();
     });
     this.subscriptions.clear();
-  }
-
-  /**
-   * Refresh cache for a specific query
-   */
-  async refetchPlayerState(
-    playerAddress: string,
-  ): Promise<GetPlayerStateResult> {
-    try {
-      const result = await apolloClient.query({
-        query: GET_PLAYER_STATE,
-        variables: { player: playerAddress },
-        fetchPolicy: "network-only",
-      });
-
-      const position = result.data.position?.edges[0]?.node;
-      const moves = result.data.moves?.edges[0]?.node;
-
-      return {
-        position,
-        moves,
-      };
-    } catch (error) {
-      console.error("Error refetching player state:", error);
-      throw error;
-    }
   }
 }

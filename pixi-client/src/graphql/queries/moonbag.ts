@@ -315,16 +315,3 @@ export const SUBSCRIBE_ACTIVE_GAME_UPDATES = gql`
     }
   }
 `;
-
-// Legacy subscription (keeping for compatibility)
-export const SUBSCRIBE_MOON_BAG_UPDATES = gql`
-  subscription SubscribeMoonBagUpdates {
-    entityUpdated {
-      id
-      keys
-      eventId
-      createdAt
-      updatedAt
-    }
-  }
-`;

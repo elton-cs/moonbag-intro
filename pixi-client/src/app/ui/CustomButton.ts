@@ -37,7 +37,7 @@ class SimpleEventEmitter {
   }
 
   emit(): void {
-    this.listeners.forEach(callback => callback());
+    this.listeners.forEach((callback) => callback());
   }
 
   removeAll(): void {
@@ -51,7 +51,7 @@ class SimpleEventEmitter {
  */
 export class CustomButton extends Container {
   public onPress = new SimpleEventEmitter();
-  
+
   private options: Required<CustomButtonOptions>;
   private background: Graphics;
   private label: Label;
@@ -78,13 +78,20 @@ export class CustomButton extends Container {
   }
 
   private drawBackground(): void {
-    const { width, height, borderRadius, backgroundColor, borderColor, borderWidth } = this.options;
-    
+    const {
+      width,
+      height,
+      borderRadius,
+      backgroundColor,
+      borderColor,
+      borderWidth,
+    } = this.options;
+
     this.background.clear();
     this.background
       .roundRect(0, 0, width, height, borderRadius)
       .fill(backgroundColor);
-    
+
     if (borderWidth > 0) {
       this.background
         .roundRect(0, 0, width, height, borderRadius)
@@ -94,7 +101,7 @@ export class CustomButton extends Container {
 
   private createLabel(): void {
     const { textColor } = this.options;
-    
+
     this.label = new Label({
       text: this.options.text,
       style: {
@@ -104,7 +111,7 @@ export class CustomButton extends Container {
         align: "center",
       },
     });
-    
+
     this.addChild(this.label);
     this.updateTextSize();
     this.centerText();
@@ -114,13 +121,16 @@ export class CustomButton extends Container {
     const { width, height, fontSize } = this.options;
     const maxWidth = width - 20; // 10px padding on each side
     const maxHeight = height - 10; // 5px padding top/bottom
-    
+
     // Start with the desired font size
     let currentFontSize = fontSize;
     this.label.style.fontSize = currentFontSize;
-    
+
     // Reduce font size until text fits within bounds
-    while ((this.label.width > maxWidth || this.label.height > maxHeight) && currentFontSize > 8) {
+    while (
+      (this.label.width > maxWidth || this.label.height > maxHeight) &&
+      currentFontSize > 8
+    ) {
       currentFontSize -= 1;
       this.label.style.fontSize = currentFontSize;
     }
@@ -133,19 +143,19 @@ export class CustomButton extends Container {
   }
 
   private setupInteractivity(): void {
-    this.eventMode = 'static';
-    this.cursor = 'pointer';
+    this.eventMode = "static";
+    this.cursor = "pointer";
 
-    this.on('pointerdown', this.onPointerDown.bind(this));
-    this.on('pointerup', this.onPointerUp.bind(this));
-    this.on('pointerover', this.onPointerOver.bind(this));
-    this.on('pointerout', this.onPointerOut.bind(this));
-    this.on('pointerupoutside', this.onPointerUpOutside.bind(this));
+    this.on("pointerdown", this.onPointerDown.bind(this));
+    this.on("pointerup", this.onPointerUp.bind(this));
+    this.on("pointerover", this.onPointerOver.bind(this));
+    this.on("pointerout", this.onPointerOut.bind(this));
+    this.on("pointerupoutside", this.onPointerUpOutside.bind(this));
   }
 
   private onPointerDown(): void {
     if (!this._enabled) return;
-    
+
     this.isPressed = true;
     this.updateVisualState();
     engine().audio.sfx.play("main/sounds/sfx-press.wav");
@@ -153,7 +163,7 @@ export class CustomButton extends Container {
 
   private onPointerUp(): void {
     if (!this._enabled) return;
-    
+
     if (this.isPressed) {
       this.isPressed = false;
       this.updateVisualState();
@@ -163,7 +173,7 @@ export class CustomButton extends Container {
 
   private onPointerOver(): void {
     if (!this._enabled) return;
-    
+
     this.isHovered = true;
     this.updateVisualState();
     engine().audio.sfx.play("main/sounds/sfx-hover.wav");
@@ -181,20 +191,20 @@ export class CustomButton extends Container {
 
   private updateVisualState(): void {
     let scaleValue = 1.0;
-    let alpha = this._enabled ? 1.0 : 0.5;
-    
+    const alpha = this._enabled ? 1.0 : 0.5;
+
     if (!this._enabled) {
-      this.cursor = 'default';
+      this.cursor = "default";
     } else {
-      this.cursor = 'pointer';
-      
+      this.cursor = "pointer";
+
       if (this.isPressed) {
         scaleValue = 0.95;
       } else if (this.isHovered) {
         scaleValue = 1.05;
       }
     }
-    
+
     this.scale.set(scaleValue);
     this.alpha = alpha;
   }

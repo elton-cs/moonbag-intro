@@ -79,7 +79,6 @@ export class MainScreen extends Container {
   private gameDataService: GameDataService;
   private moonBagDataUnsubscribe?: () => void;
 
-
   constructor() {
     super();
 
@@ -185,41 +184,53 @@ export class MainScreen extends Container {
 
     // Create updateable resource labels
     const spacing = layout.RESOURCE_BAR.WIDTH / 4;
-    
+
     // Health label
-    this.healthLabel = new Label({ 
-      text: "❤️ 5", 
-      style: { fill: 0xff4a6a, fontSize: 14, fontWeight: "bold" } 
+    this.healthLabel = new Label({
+      text: "❤️ 5",
+      style: { fill: 0xff4a6a, fontSize: 14, fontWeight: "bold" },
     });
     this.healthLabel.anchor.set(0.5);
-    this.healthLabel.position.set(spacing * 0.5, layout.RESOURCE_BAR.HEIGHT / 2);
+    this.healthLabel.position.set(
+      spacing * 0.5,
+      layout.RESOURCE_BAR.HEIGHT / 2,
+    );
     this.resourceBar.addChild(this.healthLabel);
 
     // Moon Rocks label
-    this.moonRocksLabel = new Label({ 
-      text: "🌙 0", 
-      style: { fill: 0xffdd44, fontSize: 14, fontWeight: "bold" } 
+    this.moonRocksLabel = new Label({
+      text: "🌙 0",
+      style: { fill: 0xffdd44, fontSize: 14, fontWeight: "bold" },
     });
     this.moonRocksLabel.anchor.set(0.5);
-    this.moonRocksLabel.position.set(spacing * 1.5, layout.RESOURCE_BAR.HEIGHT / 2);
+    this.moonRocksLabel.position.set(
+      spacing * 1.5,
+      layout.RESOURCE_BAR.HEIGHT / 2,
+    );
     this.resourceBar.addChild(this.moonRocksLabel);
 
     // Cheddah label
-    this.cheddahLabel = new Label({ 
-      text: "💰 0", 
-      style: { fill: 0x44ff88, fontSize: 14, fontWeight: "bold" } 
+    this.cheddahLabel = new Label({
+      text: "💰 0",
+      style: { fill: 0x44ff88, fontSize: 14, fontWeight: "bold" },
     });
     this.cheddahLabel.anchor.set(0.5);
-    this.cheddahLabel.position.set(spacing * 2.5, layout.RESOURCE_BAR.HEIGHT / 2);
+    this.cheddahLabel.position.set(
+      spacing * 2.5,
+      layout.RESOURCE_BAR.HEIGHT / 2,
+    );
     this.resourceBar.addChild(this.cheddahLabel);
 
     // Points label
-    this.pointsLabel = new Label({ 
-      text: "⭐ 0", 
-      style: { fill: 0x8a4fff, fontSize: 14, fontWeight: "bold" } 
+    this.pointsLabel = new Label({
+      text: "⭐ 0",
+      style: { fill: 0x8a4fff, fontSize: 14, fontWeight: "bold" },
     });
     this.pointsLabel.anchor.set(0.5);
-    this.pointsLabel.position.set(spacing * 3.5, layout.RESOURCE_BAR.HEIGHT / 2);
+    this.pointsLabel.position.set(
+      spacing * 3.5,
+      layout.RESOURCE_BAR.HEIGHT / 2,
+    );
     this.resourceBar.addChild(this.pointsLabel);
   }
 
@@ -262,7 +273,12 @@ export class MainScreen extends Container {
     // Level label
     this.levelLabel = new Label({
       text: "Level 1",
-      style: { fill: 0x8a4fff, align: "center", fontSize: 14, fontWeight: "bold" },
+      style: {
+        fill: 0x8a4fff,
+        align: "center",
+        fontSize: 14,
+        fontWeight: "bold",
+      },
     });
     this.levelLabel.anchor.set(0.5);
     this.levelLabel.position.set(centerX, centerY + 85);
@@ -299,7 +315,7 @@ export class MainScreen extends Container {
     const buttonHeight = 50;
     const totalButtonsWidth = buttonWidth * 5; // Now 5 buttons
     const spacing = (layout.CONTROL_PANEL.WIDTH - totalButtonsWidth) / 6; // 6 spaces for 5 buttons
-    
+
     let currentX = spacing;
 
     // Start Game button
@@ -312,7 +328,7 @@ export class MainScreen extends Container {
       textColor: 0xffffff,
       fontSize: 11,
     });
-    this.startGameButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.startGameButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.startGameButton.onPress.on(() => this.handleStartGame());
     this.controlPanel.addChild(this.startGameButton);
 
@@ -328,7 +344,7 @@ export class MainScreen extends Container {
       textColor: 0xffffff,
       fontSize: 10,
     });
-    this.pullOrbButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.pullOrbButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.pullOrbButton.onPress.on(() => this.handlePullOrb());
     this.pullOrbButton.visible = false; // Initially hidden
     this.controlPanel.addChild(this.pullOrbButton);
@@ -345,7 +361,7 @@ export class MainScreen extends Container {
       textColor: 0xffffff,
       fontSize: 10,
     });
-    this.advanceLevelButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.advanceLevelButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.advanceLevelButton.onPress.on(() => this.handleAdvanceLevel());
     this.advanceLevelButton.visible = false; // Initially hidden
     this.controlPanel.addChild(this.advanceLevelButton);
@@ -362,7 +378,7 @@ export class MainScreen extends Container {
       textColor: 0xffffff,
       fontSize: 10,
     });
-    this.quitGameButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.quitGameButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.quitGameButton.onPress.on(() => this.handleQuitGame());
     this.quitGameButton.visible = false; // Initially hidden
     this.controlPanel.addChild(this.quitGameButton);
@@ -379,7 +395,7 @@ export class MainScreen extends Container {
       textColor: 0xffffff,
       fontSize: 11,
     });
-    this.giftRocksButton.position.set(currentX, buttonY - buttonHeight/2);
+    this.giftRocksButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.giftRocksButton.onPress.on(() => this.handleGiftMoonRocks());
     this.controlPanel.addChild(this.giftRocksButton);
   }
@@ -448,10 +464,16 @@ export class MainScreen extends Container {
     this.mainContainer.y = centerY;
 
     // Calculate total height needed for all elements
-    const totalHeight = 60 + 40 + 30 + layout.RESOURCE_BAR.HEIGHT + 
-                       layout.PANEL_SPACING + layout.GAME_AREA.HEIGHT + 
-                       layout.PANEL_SPACING + layout.CONTROL_PANEL.HEIGHT;
-    
+    const totalHeight =
+      60 +
+      40 +
+      30 +
+      layout.RESOURCE_BAR.HEIGHT +
+      layout.PANEL_SPACING +
+      layout.GAME_AREA.HEIGHT +
+      layout.PANEL_SPACING +
+      layout.CONTROL_PANEL.HEIGHT;
+
     let currentY = -totalHeight / 2;
 
     // Title at the top
@@ -485,7 +507,7 @@ export class MainScreen extends Container {
     this.controlPanel.y = currentY;
 
     // Settings in top-right corner
-    this.settingsContainer.x = (width / 2) - 60;
+    this.settingsContainer.x = width / 2 - 60;
     this.settingsContainer.y = -(height / 2) + 60;
   }
 
@@ -523,10 +545,10 @@ export class MainScreen extends Container {
     if (this.walletUnsubscribe) {
       this.walletUnsubscribe();
     }
-    
+
     // Clean up Moon Bag data subscription
     this.clearMoonBagDataSubscription();
-    
+
     // Clear all GraphQL subscriptions
     this.gameDataService.clearSubscriptions();
   }
@@ -546,23 +568,23 @@ export class MainScreen extends Container {
       console.log("Starting new Moon Bag game...");
       this.startGameButton.enabled = false;
       this.startGameButton.text = "🔄 STARTING...";
-      
+
       await engine().wallet.spawnGame();
       console.log("Game started successfully!");
-      
+
       // Refresh blockchain data with polling after successful transaction
       await this.refreshMoonBagDataWithPolling();
-      
+
       // Button state will be updated by game state logic
       this.startGameButton.enabled = true;
       this.startGameButton.text = "🎮 START";
     } catch (error) {
       console.error("Failed to start game:", error);
-      
+
       // Re-enable button on error
       this.startGameButton.enabled = true;
       this.startGameButton.text = "❌ FAILED";
-      
+
       // Reset button text after showing error
       setTimeout(() => {
         this.startGameButton.text = "🎮 START";
@@ -579,20 +601,20 @@ export class MainScreen extends Container {
 
       await engine().wallet.pullOrb();
       console.log("Orb pulled successfully!");
-      
+
       // Refresh blockchain data with polling after successful transaction
       await this.refreshMoonBagDataWithPolling();
-      
+
       // Button state will be updated by game state logic
       this.pullOrbButton.enabled = true;
       this.pullOrbButton.text = "🎲 PULL ORB";
     } catch (error) {
       console.error("Failed to pull orb:", error);
-      
+
       // Re-enable button and show error state
       this.pullOrbButton.enabled = true;
       this.pullOrbButton.text = "❌ FAILED";
-      
+
       // Reset button text after showing error
       setTimeout(() => {
         this.pullOrbButton.text = "🎲 PULL ORB";
@@ -609,18 +631,18 @@ export class MainScreen extends Container {
 
       await engine().wallet.advanceToNextLevel();
       console.log("Advanced to next level successfully!");
-      
+
       // Refresh blockchain data with polling after successful transaction
       await this.refreshMoonBagDataWithPolling();
-      
+
       // Button visibility will be updated by game state logic
     } catch (error) {
       console.error("Failed to advance level:", error);
-      
+
       // Re-enable button and show error state
       this.advanceLevelButton.enabled = true;
       this.advanceLevelButton.text = "❌ FAILED";
-      
+
       // Reset button text after showing error
       setTimeout(() => {
         this.advanceLevelButton.text = "⬆️ ADVANCE";
@@ -637,18 +659,18 @@ export class MainScreen extends Container {
 
       await engine().wallet.quitGame();
       console.log("Game quit successfully!");
-      
+
       // Refresh blockchain data with polling after successful transaction
       await this.refreshMoonBagDataWithPolling();
-      
+
       // Button visibility will be updated by game state logic
     } catch (error) {
       console.error("Failed to quit game:", error);
-      
+
       // Re-enable button and show error state
       this.quitGameButton.enabled = true;
       this.quitGameButton.text = "❌ FAILED";
-      
+
       // Reset button text after showing error
       setTimeout(() => {
         this.quitGameButton.text = "💰 CASH OUT";
@@ -678,25 +700,24 @@ export class MainScreen extends Container {
 
       // Call the gift moon rocks function
       const result = await engine().wallet.giftMoonRocks();
-      
+
       console.log("Moon rocks gift successful!", result);
       this.giftRocksButton.text = "✅ GIFTED!";
-      
+
       // Refresh blockchain data with polling after successful transaction
       await this.refreshMoonBagDataWithPolling();
-      
+
       // Keep button disabled after successful gift
       setTimeout(() => {
         this.giftRocksButton.text = "🎁 GIFT USED";
       }, 2000);
-
     } catch (error) {
       console.error("Failed to gift moon rocks:", error);
-      
+
       // Re-enable button and show error state
       this.giftRocksButton.enabled = true;
       this.giftRocksButton.text = "❌ FAILED";
-      
+
       // Reset button text after showing error
       setTimeout(() => {
         this.giftRocksButton.text = "🎁 GIFT";
@@ -717,17 +738,17 @@ export class MainScreen extends Container {
 
       // Fetch all data types individually for detailed logging
       console.log("📊 ==> FETCHING INDIVIDUAL DATA TYPES <==");
-      
-      const moonRocks = await this.gameDataService.getPlayerMoonRocks(playerAddress);
-      const activeGame = await this.gameDataService.getPlayerActiveGame(playerAddress);
-      const gameHistory = await this.gameDataService.getPlayerGameHistory(playerAddress);
-      const gameCounter = await this.gameDataService.getPlayerGameCounter(playerAddress);
-      const orbBagSlots = await this.gameDataService.getPlayerOrbBagSlots(playerAddress);
+
+      await this.gameDataService.getPlayerMoonRocks(playerAddress);
+      await this.gameDataService.getPlayerActiveGame(playerAddress);
+      await this.gameDataService.getPlayerGameHistory(playerAddress);
+      await this.gameDataService.getPlayerGameCounter(playerAddress);
+      await this.gameDataService.getPlayerOrbBagSlots(playerAddress);
 
       // Fetch combined data
       console.log("📊 ==> FETCHING COMBINED DATA <==");
       const allData = await this.gameDataService.getMoonBagData(playerAddress);
-      
+
       // Update UI with fetched data
       if (allData) {
         this.updateUIWithMoonBagData(allData);
@@ -735,10 +756,9 @@ export class MainScreen extends Container {
 
       // Also fetch global data for debugging
       console.log("📊 ==> FETCHING GLOBAL DATA (ALL PLAYERS) <==");
-      const globalData = await this.gameDataService.getAllMoonBagDataGlobal();
+      await this.gameDataService.getAllMoonBagDataGlobal();
 
       console.log("✅ Moon Bag data fetch complete!");
-
     } catch (error) {
       console.error("❌ Error fetching Moon Bag data:", error);
     }
@@ -754,19 +774,18 @@ export class MainScreen extends Container {
       }
 
       console.log("🔄 Starting data refresh with polling...");
-      
+
       // Wait a bit for transaction to be indexed by Torii
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Start polling for updates
       await this.gameDataService.pollForUpdates(
         playerAddress,
         (data: MoonBagData) => {
           console.log("🔄 Polling update received, updating UI");
           this.updateUIWithMoonBagData(data);
-        }
+        },
       );
-
     } catch (error) {
       console.error("❌ Error refreshing Moon Bag data:", error);
     }
@@ -782,10 +801,10 @@ export class MainScreen extends Container {
       }
 
       console.log("🔄 Refreshing Moon Bag data...");
-      const freshData = await this.gameDataService.refetchMoonBagData(playerAddress);
+      const freshData =
+        await this.gameDataService.refetchMoonBagData(playerAddress);
       this.updateUIWithMoonBagData(freshData);
       console.log("✅ Moon Bag data refreshed!");
-
     } catch (error) {
       console.error("❌ Error refreshing Moon Bag data:", error);
     }
@@ -801,8 +820,9 @@ export class MainScreen extends Container {
     }
 
     // Find active game
-    const activeGame = data.games.find(game => game.is_active) || data.games[0];
-    
+    const activeGame =
+      data.games.find((game) => game.is_active) || data.games[0];
+
     if (activeGame) {
       // Update resource displays
       this.healthLabel.text = `❤️ ${activeGame.health}`;
@@ -831,7 +851,10 @@ export class MainScreen extends Container {
       this.gameStateLabel.text = gameStateText;
 
       // Update button states based on game state
-      this.updateControlsForGameState(activeGame.game_state, activeGame.is_active);
+      this.updateControlsForGameState(
+        activeGame.game_state,
+        activeGame.is_active,
+      );
     } else {
       // No active game
       this.healthLabel.text = "❤️ --";
@@ -846,8 +869,8 @@ export class MainScreen extends Container {
     if (data.orbBagSlots && data.orbBagSlots.length > 0) {
       const orbCounts: Record<string, number> = {};
       data.orbBagSlots
-        .filter(slot => slot.is_active)
-        .forEach(slot => {
+        .filter((slot) => slot.is_active)
+        .forEach((slot) => {
           orbCounts[slot.orb_type] = (orbCounts[slot.orb_type] || 0) + 1;
         });
 
@@ -856,7 +879,8 @@ export class MainScreen extends Container {
         return `${emoji}${count}`;
       });
 
-      this.orbBagLabel.text = orbTexts.length > 0 ? orbTexts.join(" ") : "Empty bag";
+      this.orbBagLabel.text =
+        orbTexts.length > 0 ? orbTexts.join(" ") : "Empty bag";
     } else {
       this.orbBagLabel.text = "No orbs yet";
     }
@@ -865,15 +889,22 @@ export class MainScreen extends Container {
   /** Get emoji for orb type */
   private getOrbEmoji(orbType: string): string {
     switch (orbType) {
-      case "Health": return "❤️";
-      case "FivePoints": return "⭐";
-      case "SingleBomb": return "💣";
-      default: return "🔮";
+      case "Health":
+        return "❤️";
+      case "FivePoints":
+        return "⭐";
+      case "SingleBomb":
+        return "💣";
+      default:
+        return "🔮";
     }
   }
 
   /** Update control states based on game state */
-  private updateControlsForGameState(gameState: string, hasActiveGame: boolean): void {
+  private updateControlsForGameState(
+    gameState: string,
+    hasActiveGame: boolean,
+  ): void {
     // Hide all game action buttons initially
     this.pullOrbButton.visible = false;
     this.advanceLevelButton.visible = false;
@@ -894,7 +925,7 @@ export class MainScreen extends Container {
         this.pullOrbButton.visible = true;
         this.pullOrbButton.enabled = true;
         break;
-        
+
       case "LevelComplete":
         // Level completed - show advance and quit options
         this.startGameButton.visible = false;
@@ -903,16 +934,17 @@ export class MainScreen extends Container {
         this.quitGameButton.visible = true;
         this.quitGameButton.enabled = true;
         break;
-        
+
       case "GameWon":
       case "GameLost":
         // Game over - show quit option only
         this.startGameButton.visible = false;
         this.quitGameButton.visible = true;
         this.quitGameButton.enabled = true;
-        this.quitGameButton.text = gameState === "GameWon" ? "🏆 CLAIM VICTORY" : "💀 END GAME";
+        this.quitGameButton.text =
+          gameState === "GameWon" ? "🏆 CLAIM VICTORY" : "💀 END GAME";
         break;
-        
+
       default:
         // Fallback - show start button
         this.startGameButton.enabled = true;
@@ -929,14 +961,17 @@ export class MainScreen extends Container {
       this.moonBagDataUnsubscribe();
     }
 
-    console.log("🔔 Setting up real-time Moon Bag data subscription for:", playerAddress);
+    console.log(
+      "🔔 Setting up real-time Moon Bag data subscription for:",
+      playerAddress,
+    );
 
     this.moonBagDataUnsubscribe = this.gameDataService.watchMoonBagData(
       playerAddress,
       (data: MoonBagData) => {
         console.log("🔔 Real-time Moon Bag data update:", data);
         this.updateUIWithMoonBagData(data);
-      }
+      },
     );
   }
 
