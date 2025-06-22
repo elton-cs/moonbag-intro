@@ -19,13 +19,16 @@ pub struct Game {
     pub game_id: u32,
     pub health: u8,
     pub points: u32,
-    pub multiplier: u32,  // stored as fixed point (100 = 1.0x)
+    pub multiplier: u32,              // stored as fixed point (100 = 1.0x)
     pub cheddah: u32,
     pub current_level: u8,
     pub is_active: bool,
     pub game_state: GameState,        // Current game state for progression
     pub orb_bag_size: u32,            // Number of orbs currently in bag
     pub orbs_drawn_count: u32,        // Number of orbs drawn this level
+    pub bombs_drawn_count: u32,       // Number of bomb orbs drawn this level (for BombCounter)
+    pub temp_multiplier_active: bool, // Whether NextPoints2x is active
+    pub temp_multiplier_value: u32,   // Temporary multiplier value (100 = 1.0x)
 }
 
 // Counter model to track next game ID for each player
@@ -46,12 +49,42 @@ pub struct ActiveGame {
     pub game_id: u32,  // 0 = no active game
 }
 
-// Orb types for Moon Bag game - simple enum for array storage
+// Orb types for Moon Bag game - complete enum with all PRD orbs
 #[derive(Serde, Copy, Drop, Introspect, PartialEq)]
 pub enum OrbType {
-    SingleBomb,    // -1 health
-    FivePoints,    // +5 points  
-    Health,        // +1 health
+    // Starting bag bomb orbs
+    SingleBomb,        // -1 health
+    DoubleBomb,        // -2 health
+    TripleBomb,        // -3 health
+    
+    // Starting bag points orbs
+    FivePoints,        // +5 points
+    
+    // Starting bag multiplier orbs
+    DoubleMultiplier,  // ×2 multiplier
+    
+    // Starting bag dynamic orbs
+    RemainingOrbs,     // points = orbs left in bag
+    BombCounter,       // points = bombs drawn this level
+    
+    // Starting bag utility orbs
+    Health,            // +1 health
+    
+    // Shop orbs - Common
+    CheddahBomb,       // bomb that gives +10 Cheddah instead of damage
+    SevenPoints,       // +7 points
+    MoonRock,          // +2 Moon Rocks
+    HalfMultiplier,    // ×0.5 multiplier
+    
+    // Shop orbs - Rare
+    EightPoints,       // +8 points
+    NinePoints,        // +9 points
+    NextPoints2x,      // ×2 multiplier for next points orb only
+    Multiplier1_5x,    // ×1.5 multiplier
+    
+    // Shop orbs - Cosmic
+    BigHealth,         // +3 health
+    BigMoonRock,       // +10 Moon Rocks
 }
 
 // Game state enum for win/lose logic and level progression

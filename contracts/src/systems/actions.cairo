@@ -94,6 +94,46 @@ pub mod actions {
         (random_u256 % max_value.into()).try_into().unwrap()
     }
 
+    // Check if an orb type is a bomb
+    fn is_bomb_orb(orb_type: OrbType) -> bool {
+        match orb_type {
+            OrbType::SingleBomb => true,
+            OrbType::DoubleBomb => true,
+            OrbType::TripleBomb => true,
+            OrbType::CheddahBomb => true,
+            _ => false,
+        }
+    }
+
+    // Check if an orb type gives points (for temporary multiplier application)
+    fn is_points_orb(orb_type: OrbType) -> bool {
+        match orb_type {
+            OrbType::FivePoints => true,
+            OrbType::SevenPoints => true,
+            OrbType::EightPoints => true,
+            OrbType::NinePoints => true,
+            OrbType::RemainingOrbs => true,
+            OrbType::BombCounter => true,
+            _ => false,
+        }
+    }
+
+    // Calculate points with multiplier (always rounds up)
+    fn calculate_points_with_multiplier(base_points: u32, multiplier: u32) -> u32 {
+        let result = base_points * multiplier;
+        // If there's a remainder when dividing by 100, round up
+        if result % 100 == 0 {
+            result / 100
+        } else {
+            (result / 100).saturating_add(1)
+        }
+    }
+
+    // Apply multiplier to a value, supporting fractional multipliers
+    fn apply_multiplier(base_value: u32, multiplier: u32) -> u32 {
+        calculate_points_with_multiplier(base_value, multiplier)
+    }
+
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
 
@@ -135,17 +175,29 @@ pub mod actions {
                 current_level: INIT_LEVEL,
                 is_active: true,
                 game_state: GameState::Active,
-                orb_bag_size: 6,  // Starting with 6 orbs
+                orb_bag_size: 12,  // PRD starting bag has 12 orbs
                 orbs_drawn_count: 0,
+                bombs_drawn_count: 0,
+                temp_multiplier_active: false,
+                temp_multiplier_value: 100,
             };
 
-            // Create starting orb bag slots with PRD starting orbs
+            // Create starting orb bag slots with PRD starting orbs (12 total)
+            // 2x Single Bomb, 2x Double Bomb, 1x Triple Bomb
             let orb_slot_0 = OrbBagSlot { player, game_id: current_game_id, slot_index: 0, orb_type: OrbType::SingleBomb, is_active: true };
             let orb_slot_1 = OrbBagSlot { player, game_id: current_game_id, slot_index: 1, orb_type: OrbType::SingleBomb, is_active: true };
-            let orb_slot_2 = OrbBagSlot { player, game_id: current_game_id, slot_index: 2, orb_type: OrbType::FivePoints, is_active: true };
-            let orb_slot_3 = OrbBagSlot { player, game_id: current_game_id, slot_index: 3, orb_type: OrbType::FivePoints, is_active: true };
-            let orb_slot_4 = OrbBagSlot { player, game_id: current_game_id, slot_index: 4, orb_type: OrbType::FivePoints, is_active: true };
-            let orb_slot_5 = OrbBagSlot { player, game_id: current_game_id, slot_index: 5, orb_type: OrbType::Health, is_active: true };
+            let orb_slot_2 = OrbBagSlot { player, game_id: current_game_id, slot_index: 2, orb_type: OrbType::DoubleBomb, is_active: true };
+            let orb_slot_3 = OrbBagSlot { player, game_id: current_game_id, slot_index: 3, orb_type: OrbType::DoubleBomb, is_active: true };
+            let orb_slot_4 = OrbBagSlot { player, game_id: current_game_id, slot_index: 4, orb_type: OrbType::TripleBomb, is_active: true };
+            // 3x Five Points
+            let orb_slot_5 = OrbBagSlot { player, game_id: current_game_id, slot_index: 5, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_6 = OrbBagSlot { player, game_id: current_game_id, slot_index: 6, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_7 = OrbBagSlot { player, game_id: current_game_id, slot_index: 7, orb_type: OrbType::FivePoints, is_active: true };
+            // 1x Double Multiplier, 1x Remaining Orbs, 1x Bomb Counter, 1x Health
+            let orb_slot_8 = OrbBagSlot { player, game_id: current_game_id, slot_index: 8, orb_type: OrbType::DoubleMultiplier, is_active: true };
+            let orb_slot_9 = OrbBagSlot { player, game_id: current_game_id, slot_index: 9, orb_type: OrbType::RemainingOrbs, is_active: true };
+            let orb_slot_10 = OrbBagSlot { player, game_id: current_game_id, slot_index: 10, orb_type: OrbType::BombCounter, is_active: true };
+            let orb_slot_11 = OrbBagSlot { player, game_id: current_game_id, slot_index: 11, orb_type: OrbType::Health, is_active: true };
 
             // Increment the counter for next game
             game_counter.next_game_id = game_counter.next_game_id.saturating_add(1);
@@ -168,6 +220,12 @@ pub mod actions {
             world.write_model(@orb_slot_3);
             world.write_model(@orb_slot_4);
             world.write_model(@orb_slot_5);
+            world.write_model(@orb_slot_6);
+            world.write_model(@orb_slot_7);
+            world.write_model(@orb_slot_8);
+            world.write_model(@orb_slot_9);
+            world.write_model(@orb_slot_10);
+            world.write_model(@orb_slot_11);
         }
 
         fn pull_orb(ref self: ContractState) {
@@ -214,14 +272,114 @@ pub mod actions {
 
             // Apply orb effects to game state
             match selected_orb_type {
+                // Bomb orbs
                 OrbType::SingleBomb => {
                     game.health = game.health.saturating_sub(1);
+                    game.bombs_drawn_count = game.bombs_drawn_count.saturating_add(1);
                 },
+                OrbType::DoubleBomb => {
+                    game.health = game.health.saturating_sub(2);
+                    game.bombs_drawn_count = game.bombs_drawn_count.saturating_add(1);
+                },
+                OrbType::TripleBomb => {
+                    game.health = game.health.saturating_sub(3);
+                    game.bombs_drawn_count = game.bombs_drawn_count.saturating_add(1);
+                },
+                OrbType::CheddahBomb => {
+                    // Special bomb that gives Cheddah instead of damage
+                    game.cheddah = game.cheddah.saturating_add(10);
+                    game.bombs_drawn_count = game.bombs_drawn_count.saturating_add(1);
+                },
+                
+                // Static points orbs
                 OrbType::FivePoints => {
-                    game.points = game.points.saturating_add(5 * game.multiplier / 100);
+                    let mut effective_multiplier = game.multiplier;
+                    if game.temp_multiplier_active && is_points_orb(selected_orb_type) {
+                        effective_multiplier = game.temp_multiplier_value;
+                        game.temp_multiplier_active = false; // Consume temp multiplier
+                    }
+                    game.points = game.points.saturating_add(apply_multiplier(5, effective_multiplier));
                 },
+                OrbType::SevenPoints => {
+                    let mut effective_multiplier = game.multiplier;
+                    if game.temp_multiplier_active && is_points_orb(selected_orb_type) {
+                        effective_multiplier = game.temp_multiplier_value;
+                        game.temp_multiplier_active = false;
+                    }
+                    game.points = game.points.saturating_add(apply_multiplier(7, effective_multiplier));
+                },
+                OrbType::EightPoints => {
+                    let mut effective_multiplier = game.multiplier;
+                    if game.temp_multiplier_active && is_points_orb(selected_orb_type) {
+                        effective_multiplier = game.temp_multiplier_value;
+                        game.temp_multiplier_active = false;
+                    }
+                    game.points = game.points.saturating_add(apply_multiplier(8, effective_multiplier));
+                },
+                OrbType::NinePoints => {
+                    let mut effective_multiplier = game.multiplier;
+                    if game.temp_multiplier_active && is_points_orb(selected_orb_type) {
+                        effective_multiplier = game.temp_multiplier_value;
+                        game.temp_multiplier_active = false;
+                    }
+                    game.points = game.points.saturating_add(apply_multiplier(9, effective_multiplier));
+                },
+                
+                // Dynamic points orbs
+                OrbType::RemainingOrbs => {
+                    // Points = orbs remaining in bag after this draw
+                    let remaining_orbs = game.orb_bag_size.saturating_sub(1);
+                    let mut effective_multiplier = game.multiplier;
+                    if game.temp_multiplier_active && is_points_orb(selected_orb_type) {
+                        effective_multiplier = game.temp_multiplier_value;
+                        game.temp_multiplier_active = false;
+                    }
+                    game.points = game.points.saturating_add(apply_multiplier(remaining_orbs, effective_multiplier));
+                },
+                OrbType::BombCounter => {
+                    // Points = bombs drawn so far this level
+                    let mut effective_multiplier = game.multiplier;
+                    if game.temp_multiplier_active && is_points_orb(selected_orb_type) {
+                        effective_multiplier = game.temp_multiplier_value;
+                        game.temp_multiplier_active = false;
+                    }
+                    game.points = game.points.saturating_add(apply_multiplier(game.bombs_drawn_count, effective_multiplier));
+                },
+                
+                // Multiplier orbs
+                OrbType::DoubleMultiplier => {
+                    game.multiplier = game.multiplier.saturating_add(100); // +1.0x (200 total = 2.0x)
+                },
+                OrbType::HalfMultiplier => {
+                    game.multiplier = game.multiplier / 2; // ×0.5
+                },
+                OrbType::Multiplier1_5x => {
+                    game.multiplier = (game.multiplier * 150) / 100; // ×1.5
+                },
+                OrbType::NextPoints2x => {
+                    // Activate temporary 2x multiplier for next points orb only
+                    game.temp_multiplier_active = true;
+                    game.temp_multiplier_value = 200; // 2.0x
+                },
+                
+                // Health orbs
                 OrbType::Health => {
                     game.health = game.health.saturating_add(1);
+                },
+                OrbType::BigHealth => {
+                    game.health = game.health.saturating_add(3);
+                },
+                
+                // Currency orbs
+                OrbType::MoonRock => {
+                    let mut moon_rocks: MoonRocks = world.read_model(player);
+                    moon_rocks.amount = moon_rocks.amount.saturating_add(2);
+                    world.write_model(@moon_rocks);
+                },
+                OrbType::BigMoonRock => {
+                    let mut moon_rocks: MoonRocks = world.read_model(player);
+                    moon_rocks.amount = moon_rocks.amount.saturating_add(10);
+                    world.write_model(@moon_rocks);
                 },
             }
 
@@ -319,15 +477,27 @@ pub mod actions {
             game.game_state = GameState::Active;
             game.multiplier = INIT_MULTIPLIER; // Reset multiplier between levels
             game.orbs_drawn_count = 0; // Clear drawn orbs count for new level
-            game.orb_bag_size = 6; // Reset bag size to starting size
+            game.bombs_drawn_count = 0; // Clear bombs drawn count for new level
+            game.temp_multiplier_active = false; // Clear temporary multiplier
+            game.temp_multiplier_value = 100; // Reset temp multiplier value
+            game.orb_bag_size = 12; // Reset bag size to PRD starting size
 
-            // Reset all orb bag slots for new level (using same starting orbs for now)
+            // Reset all orb bag slots for new level with PRD starting orbs
+            // 2x Single Bomb, 2x Double Bomb, 1x Triple Bomb
             let orb_slot_0 = OrbBagSlot { player, game_id: game.game_id, slot_index: 0, orb_type: OrbType::SingleBomb, is_active: true };
             let orb_slot_1 = OrbBagSlot { player, game_id: game.game_id, slot_index: 1, orb_type: OrbType::SingleBomb, is_active: true };
-            let orb_slot_2 = OrbBagSlot { player, game_id: game.game_id, slot_index: 2, orb_type: OrbType::FivePoints, is_active: true };
-            let orb_slot_3 = OrbBagSlot { player, game_id: game.game_id, slot_index: 3, orb_type: OrbType::FivePoints, is_active: true };
-            let orb_slot_4 = OrbBagSlot { player, game_id: game.game_id, slot_index: 4, orb_type: OrbType::FivePoints, is_active: true };
-            let orb_slot_5 = OrbBagSlot { player, game_id: game.game_id, slot_index: 5, orb_type: OrbType::Health, is_active: true };
+            let orb_slot_2 = OrbBagSlot { player, game_id: game.game_id, slot_index: 2, orb_type: OrbType::DoubleBomb, is_active: true };
+            let orb_slot_3 = OrbBagSlot { player, game_id: game.game_id, slot_index: 3, orb_type: OrbType::DoubleBomb, is_active: true };
+            let orb_slot_4 = OrbBagSlot { player, game_id: game.game_id, slot_index: 4, orb_type: OrbType::TripleBomb, is_active: true };
+            // 3x Five Points
+            let orb_slot_5 = OrbBagSlot { player, game_id: game.game_id, slot_index: 5, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_6 = OrbBagSlot { player, game_id: game.game_id, slot_index: 6, orb_type: OrbType::FivePoints, is_active: true };
+            let orb_slot_7 = OrbBagSlot { player, game_id: game.game_id, slot_index: 7, orb_type: OrbType::FivePoints, is_active: true };
+            // 1x Double Multiplier, 1x Remaining Orbs, 1x Bomb Counter, 1x Health
+            let orb_slot_8 = OrbBagSlot { player, game_id: game.game_id, slot_index: 8, orb_type: OrbType::DoubleMultiplier, is_active: true };
+            let orb_slot_9 = OrbBagSlot { player, game_id: game.game_id, slot_index: 9, orb_type: OrbType::RemainingOrbs, is_active: true };
+            let orb_slot_10 = OrbBagSlot { player, game_id: game.game_id, slot_index: 10, orb_type: OrbType::BombCounter, is_active: true };
+            let orb_slot_11 = OrbBagSlot { player, game_id: game.game_id, slot_index: 11, orb_type: OrbType::Health, is_active: true };
             
             // Write updated orb slots
             world.write_model(@orb_slot_0);
@@ -336,6 +506,12 @@ pub mod actions {
             world.write_model(@orb_slot_3);
             world.write_model(@orb_slot_4);
             world.write_model(@orb_slot_5);
+            world.write_model(@orb_slot_6);
+            world.write_model(@orb_slot_7);
+            world.write_model(@orb_slot_8);
+            world.write_model(@orb_slot_9);
+            world.write_model(@orb_slot_10);
+            world.write_model(@orb_slot_11);
 
             // Write updated game state
             world.write_model(@game);
