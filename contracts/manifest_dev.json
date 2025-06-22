@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x53f6ca2620fbd68a6aeab5bb42a0c8b642116b9147e62b77942a40999349ab",
-      "class_hash": "0x6f4bc7d8acd2fa9d0cf599bd84ec0f1681a06b69be8c205652c73ff96a80b56",
+      "address": "0xb9b9a851cc8d4455d9f3f0b50a492e5640f67e1f2e32f323090d28b9de9fd7",
+      "class_hash": "0x35a6f860a6c640388d9978782f11c2b2ee06047f8227482c61553d42474758b",
       "abi": [
         {
           "type": "impl",
@@ -1387,38 +1387,9 @@
           "interface_name": "dojo_intro::systems::actions::IActions"
         },
         {
-          "type": "enum",
-          "name": "dojo_intro::models::Direction",
-          "variants": [
-            {
-              "name": "Left",
-              "type": "()"
-            },
-            {
-              "name": "Right",
-              "type": "()"
-            },
-            {
-              "name": "Up",
-              "type": "()"
-            },
-            {
-              "name": "Down",
-              "type": "()"
-            }
-          ]
-        },
-        {
           "type": "interface",
           "name": "dojo_intro::systems::actions::IActions",
           "items": [
-            {
-              "type": "function",
-              "name": "spawn",
-              "inputs": [],
-              "outputs": [],
-              "state_mutability": "external"
-            },
             {
               "type": "function",
               "name": "spawn_game",
@@ -1450,25 +1421,6 @@
             {
               "type": "function",
               "name": "gift_moonrocks",
-              "inputs": [],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "move",
-              "inputs": [
-                {
-                  "name": "direction",
-                  "type": "dojo_intro::models::Direction"
-                }
-              ],
-              "outputs": [],
-              "state_mutability": "external"
-            },
-            {
-              "type": "function",
-              "name": "move_random",
               "inputs": [],
               "outputs": [],
               "state_mutability": "external"
@@ -1594,14 +1546,11 @@
       "tag": "di-actions",
       "selector": "0x4c09d12108e978b8c073f8d7186ed1aa144777a0aad9d1334532b5813038897",
       "systems": [
-        "spawn",
         "spawn_game",
         "pull_orb",
         "advance_to_next_level",
         "quit_game",
         "gift_moonrocks",
-        "move",
-        "move_random",
         "upgrade"
       ]
     }
@@ -1640,21 +1589,9 @@
     },
     {
       "members": [],
-      "class_hash": "0x3bdd8b9fc059328965a1d42d0491d8b86cc8d56bba06a3cf4fd66286debe726",
-      "tag": "di-Moves",
-      "selector": "0xf9b3361ecd0207357b703079e95e035572c2bf2b236611dd97111225abe9f"
-    },
-    {
-      "members": [],
       "class_hash": "0x2e3105784649c55f6d09697b9c3b5302033951f284aa900b13740c00274e232",
       "tag": "di-OrbBagSlot",
       "selector": "0x57359e4256487e0e8d2102e529bdbe0eafd16c659183907b5b4228d62dc7954"
-    },
-    {
-      "members": [],
-      "class_hash": "0xcdf94b2da2f678597cc24be33a15346c00343b2f54788bd8cfb792ef13d0f3",
-      "tag": "di-Position",
-      "selector": "0x594a11e54660698f5198d8a38c3f2a691680a4466addfeac08919c3014b5e75"
     }
   ],
   "events": [],

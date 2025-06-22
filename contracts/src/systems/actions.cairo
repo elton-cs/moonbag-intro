@@ -1,42 +1,23 @@
-use crate::models::Direction;
-use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IActions<T> {
-    fn spawn(ref self: T);
     fn spawn_game(ref self: T);
     fn pull_orb(ref self: T);
     fn advance_to_next_level(ref self: T);
     fn quit_game(ref self: T);
     fn gift_moonrocks(ref self: T);
-    fn move(ref self: T, direction: Direction);
-    fn move_random(ref self: T);
 }
 
-#[starknet::interface]
-trait IVrfProvider<T> {
-    fn request_random(self: @T, caller: ContractAddress, source: Source);
-    fn consume_random(ref self: T, source: Source) -> felt252;
-}
-
-#[derive(Drop, Copy, Clone, Serde)]
-pub enum Source {
-    Nonce: ContractAddress,
-    Salt: felt252,
-}
 
 #[dojo::contract]
 pub mod actions {
-    use super::{IActions, IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
-    use crate::models::{Direction, Moves, Position, PositionTrait, Game, GameCounter, MoonRocks, OrbType, ActiveGame, GameState, OrbBagSlot, DrawnOrb};
+    use super::IActions;
+    use crate::models::{Game, GameCounter, MoonRocks, OrbType, ActiveGame, GameState, OrbBagSlot, DrawnOrb};
 
-    use core::num::traits::SaturatingSub;
+    use core::num::traits::{SaturatingAdd, SaturatingSub};
     use dojo::model::ModelStorage;
     use starknet::{get_caller_address, get_block_timestamp, get_tx_info};
 
-    pub const INIT_COORD: u32 = 10;
-    pub const INIT_REMAINING_MOVES: u8 = 100;
-    const VRF_PROVIDER_ADDRESS: felt252 = 0x15f542e25a4ce31481f986888c179b6e57412be340b8095f72f75a328fbb27b;
     
     // Moon Bag starting values from PRD
     pub const INIT_HEALTH: u8 = 5;
@@ -54,7 +35,7 @@ pub mod actions {
 
     // Helper functions for level data (using 0-based indexing for Cairo match requirements)
     fn get_milestone_points(level: u8) -> u32 {
-        match level - 1 {
+        match level.saturating_sub(1) {
             0 => 12,  // Level 1
             1 => 18,  // Level 2
             2 => 28,  // Level 3
@@ -67,7 +48,7 @@ pub mod actions {
     }
 
     fn get_level_cost(level: u8) -> u32 {
-        match level - 1 {
+        match level.saturating_sub(1) {
             0 => 5,   // Level 1
             1 => 6,   // Level 2
             2 => 8,   // Level 3
@@ -80,7 +61,7 @@ pub mod actions {
     }
 
     fn get_cheddah_reward(level: u8) -> u32 {
-        match level - 1 {
+        match level.saturating_sub(1) {
             0 => 10,  // Level 1
             1 => 15,  // Level 2
             2 => 20,  // Level 3
@@ -115,25 +96,6 @@ pub mod actions {
 
     #[abi(embed_v0)]
     impl ActionsImpl of IActions<ContractState> {
-        fn spawn(ref self: ContractState) {
-            let mut world = self.world_default();
-
-            let player = get_caller_address();
-
-            let position = Position {
-                player,
-                x: INIT_COORD,
-                y: INIT_COORD,
-            };
-
-            let moves = Moves {
-                player,
-                remaining: INIT_REMAINING_MOVES,
-            };
-
-            world.write_model(@position);
-            world.write_model(@moves);
-        }
 
         fn spawn_game(ref self: ContractState) {
             let mut world = self.world_default();
@@ -149,7 +111,7 @@ pub mod actions {
             assert(moon_rocks.amount >= GAME_ENTRY_COST, 'Insufficient moon rocks');
             
             // Deduct game entry cost
-            moon_rocks.amount -= GAME_ENTRY_COST;
+            moon_rocks.amount = moon_rocks.amount.saturating_sub(GAME_ENTRY_COST);
             world.write_model(@moon_rocks);
 
             // Get or initialize the game counter for this player
@@ -186,7 +148,7 @@ pub mod actions {
             let orb_slot_5 = OrbBagSlot { player, game_id: current_game_id, slot_index: 5, orb_type: OrbType::Health, is_active: true };
 
             // Increment the counter for next game
-            game_counter.next_game_id += 1;
+            game_counter.next_game_id = game_counter.next_game_id.saturating_add(1);
 
             // Set this game as active for the player
             let new_active_game = ActiveGame {
@@ -256,10 +218,10 @@ pub mod actions {
                     game.health = game.health.saturating_sub(1);
                 },
                 OrbType::FivePoints => {
-                    game.points += 5 * game.multiplier / 100;
+                    game.points = game.points.saturating_add(5 * game.multiplier / 100);
                 },
                 OrbType::Health => {
-                    game.health += 1;
+                    game.health = game.health.saturating_add(1);
                 },
             }
 
@@ -269,14 +231,14 @@ pub mod actions {
             world.write_model(@selected_slot);
             
             // Decrease bag size and increase drawn count
-            game.orb_bag_size -= 1;
-            game.orbs_drawn_count += 1;
+            game.orb_bag_size = game.orb_bag_size.saturating_sub(1);
+            game.orbs_drawn_count = game.orbs_drawn_count.saturating_add(1);
             
             // Add to drawn orbs tracking
             let drawn_orb = DrawnOrb {
                 player,
                 game_id: game.game_id,
-                draw_index: game.orbs_drawn_count - 1,
+                draw_index: game.orbs_drawn_count.saturating_sub(1),
                 orb_type: selected_orb_type,
             };
             world.write_model(@drawn_orb);
@@ -310,7 +272,7 @@ pub mod actions {
                     // Level completed - await player choice
                     game.game_state = GameState::LevelComplete;
                     // Award Cheddah for level completion
-                    game.cheddah += get_cheddah_reward(game.current_level);
+                    game.cheddah = game.cheddah.saturating_add(get_cheddah_reward(game.current_level));
                 }
             } else if game.orb_bag_size == 0 {
                 // Loss condition: bag empty before milestone reached
@@ -341,7 +303,7 @@ pub mod actions {
             assert(game.game_state == GameState::LevelComplete, 'Level not completed');
 
             // Check player has sufficient moon rocks for next level
-            let next_level = game.current_level + 1;
+            let next_level = game.current_level.saturating_add(1);
             assert(next_level <= MAX_LEVEL, 'Already at max level');
             
             let level_cost = get_level_cost(next_level);
@@ -349,7 +311,7 @@ pub mod actions {
             assert(moon_rocks.amount >= level_cost, 'Insufficient moon rocks');
 
             // Deduct level cost
-            moon_rocks.amount -= level_cost;
+            moon_rocks.amount = moon_rocks.amount.saturating_sub(level_cost);
             world.write_model(@moon_rocks);
 
             // Advance to next level
@@ -398,7 +360,7 @@ pub mod actions {
 
             // Convert points to Moon Rocks (1:1 ratio per PRD)
             let mut moon_rocks: MoonRocks = world.read_model(player);
-            moon_rocks.amount += game.points;
+            moon_rocks.amount = moon_rocks.amount.saturating_add(game.points);
             world.write_model(@moon_rocks);
 
             // End the game
@@ -433,37 +395,6 @@ pub mod actions {
             world.write_model(@gift);
         }
 
-        fn move(ref self: ContractState, direction: Direction) {
-            let mut world = self.world_default();
-
-            let player = get_caller_address();
-
-            let mut position: Position = world.read_model(player);
-            position.apply_direction(direction);
-            world.write_model(@position);
-
-            let mut moves: Moves = world.read_model(player);
-            moves.remaining = moves.remaining.saturating_sub(1);
-            world.write_model(@moves);
-        }
-
-        fn move_random(ref self: ContractState) {
-            let player = starknet::get_caller_address();
-
-            let vrf_provider = IVrfProviderDispatcher { contract_address: VRF_PROVIDER_ADDRESS.try_into().unwrap() };
-            let random_value: u256 = vrf_provider.consume_random(Source::Nonce(player)).into();
-            let random_dir: felt252 = (random_value % 4).try_into().unwrap();
-
-            let direction = match random_dir {
-                0 => Direction::Up,
-                1 => Direction::Down,
-                2 => Direction::Left,
-                3 => Direction::Right,
-                _ => panic!("Invalid random direction"),
-            };
-
-            self.move(direction);
-        }
 
     }
 
