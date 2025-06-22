@@ -13,6 +13,10 @@ import {
   GET_ALL_MOON_BAG_DATA,
   GET_ALL_MOON_BAG_DATA_GLOBAL,
   SUBSCRIBE_MOON_BAG_UPDATES,
+  SUBSCRIBE_MOON_BAG_PLAYER_UPDATES,
+  SUBSCRIBE_MOON_ROCKS_UPDATES,
+  SUBSCRIBE_GAME_UPDATES,
+  SUBSCRIBE_ACTIVE_GAME_UPDATES,
 } from "../queries/moonbag";
 import type {
   GetPlayerStateResult,
@@ -342,7 +346,7 @@ export class GameDataService {
   }
 
   /**
-   * Watch Moon Bag data changes with real-time updates
+   * Watch Moon Bag data changes with real-time WebSocket updates
    */
   watchMoonBagData(
     playerAddress: string,
@@ -352,18 +356,157 @@ export class GameDataService {
     // First, get initial data
     this.getMoonBagData(playerAddress).then(callback).catch(console.error);
 
-    // Then subscribe to updates
-    return this.subscribeToEntityUpdates(
-      async () => {
-        try {
-          const newData = await this.getMoonBagData(playerAddress);
-          callback(newData);
-        } catch (error) {
-          console.error("Error updating Moon Bag data:", error);
-        }
-      },
+    // Set up targeted Moon Bag subscription
+    return this.subscribeMoonBagPlayerUpdates(
+      playerAddress,
+      callback,
       subscriptionId || `moonbag-${playerAddress}`,
     );
+  }
+
+  /**
+   * Subscribe to Moon Bag player updates using WebSocket
+   */
+  subscribeMoonBagPlayerUpdates(
+    playerAddress: string,
+    callback: (data: MoonBagData) => void,
+    subscriptionId: string = "default",
+  ): () => void {
+    try {
+      console.log(`🔔 Setting up Moon Bag WebSocket subscription for player: ${playerAddress}`);
+      
+      const subscription = apolloClient
+        .subscribe({
+          query: SUBSCRIBE_MOON_BAG_PLAYER_UPDATES,
+          variables: { player: playerAddress },
+        })
+        .subscribe({
+          next: (result) => {
+            if (result.data) {
+              console.log("🔔 REAL-TIME UPDATE - Raw Moon Bag Data:", result.data);
+              
+              // Parse the subscription data
+              const parsedData = this.parseMoonBagData(result.data);
+              console.log("🔔 REAL-TIME UPDATE - Parsed Moon Bag Data:", parsedData);
+              
+              // Log individual data types for detailed tracking
+              if (parsedData.moonRocks) {
+                console.log("🔔 REAL-TIME UPDATE - Moon Rocks:", parsedData.moonRocks);
+              }
+              if (parsedData.activeGame) {
+                console.log("🔔 REAL-TIME UPDATE - Active Game:", parsedData.activeGame);
+              }
+              if (parsedData.games.length > 0) {
+                console.log("🔔 REAL-TIME UPDATE - Game History:", parsedData.games);
+              }
+              if (parsedData.gameCounter) {
+                console.log("🔔 REAL-TIME UPDATE - Game Counter:", parsedData.gameCounter);
+              }
+              
+              callback(parsedData);
+            }
+          },
+          error: (error) => {
+            console.error("🔔 Moon Bag subscription error:", error);
+          },
+        });
+
+      this.subscriptions.set(subscriptionId, subscription);
+
+      // Return unsubscribe function
+      return () => {
+        console.log(`🔕 Unsubscribing from Moon Bag updates: ${subscriptionId}`);
+        subscription.unsubscribe();
+        this.subscriptions.delete(subscriptionId);
+      };
+    } catch (error) {
+      console.error("Error setting up Moon Bag subscription:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Subscribe to specific Moon Rocks updates only
+   */
+  subscribeMoonRocksUpdates(
+    playerAddress: string,
+    callback: (moonRocks: MoonRocksModel | undefined) => void,
+    subscriptionId: string = "moon-rocks",
+  ): () => void {
+    try {
+      console.log(`🔔 Setting up Moon Rocks WebSocket subscription for player: ${playerAddress}`);
+      
+      const subscription = apolloClient
+        .subscribe({
+          query: SUBSCRIBE_MOON_ROCKS_UPDATES,
+          variables: { player: playerAddress },
+        })
+        .subscribe({
+          next: (result) => {
+            if (result.data?.diMoonRocksModels) {
+              const moonRocks = result.data.diMoonRocksModels?.edges[0]?.node;
+              console.log("🔔 REAL-TIME UPDATE - Moon Rocks Only:", moonRocks);
+              callback(moonRocks);
+            }
+          },
+          error: (error) => {
+            console.error("🔔 Moon Rocks subscription error:", error);
+          },
+        });
+
+      this.subscriptions.set(subscriptionId, subscription);
+
+      return () => {
+        console.log(`🔕 Unsubscribing from Moon Rocks updates: ${subscriptionId}`);
+        subscription.unsubscribe();
+        this.subscriptions.delete(subscriptionId);
+      };
+    } catch (error) {
+      console.error("Error setting up Moon Rocks subscription:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Subscribe to game state updates only
+   */
+  subscribeGameUpdates(
+    playerAddress: string,
+    callback: (games: GameModel[]) => void,
+    subscriptionId: string = "games",
+  ): () => void {
+    try {
+      console.log(`🔔 Setting up Game Updates WebSocket subscription for player: ${playerAddress}`);
+      
+      const subscription = apolloClient
+        .subscribe({
+          query: SUBSCRIBE_GAME_UPDATES,
+          variables: { player: playerAddress },
+        })
+        .subscribe({
+          next: (result) => {
+            if (result.data?.diGameModels) {
+              const games = result.data.diGameModels?.edges?.map((edge: any) => edge.node) || [];
+              console.log("🔔 REAL-TIME UPDATE - Game History Only:", games);
+              callback(games);
+            }
+          },
+          error: (error) => {
+            console.error("🔔 Game updates subscription error:", error);
+          },
+        });
+
+      this.subscriptions.set(subscriptionId, subscription);
+
+      return () => {
+        console.log(`🔕 Unsubscribing from Game updates: ${subscriptionId}`);
+        subscription.unsubscribe();
+        this.subscriptions.delete(subscriptionId);
+      };
+    } catch (error) {
+      console.error("Error setting up Game subscription:", error);
+      throw error;
+    }
   }
 
   /**

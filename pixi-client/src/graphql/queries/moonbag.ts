@@ -150,7 +150,99 @@ export const GET_ALL_MOON_BAG_DATA_GLOBAL = gql`
   }
 `;
 
-// Subscription for real-time Moon Bag data updates
+// Real-time subscription for all Moon Bag data changes for a specific player
+export const SUBSCRIBE_MOON_BAG_PLAYER_UPDATES = gql`
+  subscription SubscribeMoonBagPlayerUpdates($player: String!) {
+    diMoonRocksModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          amount
+        }
+      }
+    }
+    diGameModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          health
+          points
+          multiplier
+          cheddah
+          current_level
+          is_active
+          game_state
+        }
+      }
+    }
+    diActiveGameModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+        }
+      }
+    }
+    diGameCounterModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          next_game_id
+        }
+      }
+    }
+  }
+`;
+
+// Individual subscriptions for specific data types (if needed for targeted listening)
+export const SUBSCRIBE_MOON_ROCKS_UPDATES = gql`
+  subscription SubscribeMoonRocksUpdates($player: String!) {
+    diMoonRocksModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          amount
+        }
+      }
+    }
+  }
+`;
+
+export const SUBSCRIBE_GAME_UPDATES = gql`
+  subscription SubscribeGameUpdates($player: String!) {
+    diGameModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          health
+          points
+          multiplier
+          cheddah
+          current_level
+          is_active
+          game_state
+        }
+      }
+    }
+  }
+`;
+
+export const SUBSCRIBE_ACTIVE_GAME_UPDATES = gql`
+  subscription SubscribeActiveGameUpdates($player: String!) {
+    diActiveGameModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+        }
+      }
+    }
+  }
+`;
+
+// Legacy subscription (keeping for compatibility)
 export const SUBSCRIBE_MOON_BAG_UPDATES = gql`
   subscription SubscribeMoonBagUpdates {
     entityUpdated {
