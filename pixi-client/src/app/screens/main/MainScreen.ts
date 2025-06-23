@@ -35,9 +35,9 @@ export class MainScreen extends Container {
       HEIGHT: 200, // Reduced height for game status area
       BORDER_RADIUS: 15,
     },
-    ORB_INFO_ROW: {
+    CENTRAL_ORB_DISPLAY: {
       WIDTH: 500,
-      HEIGHT: 60, // New row for orb bag contents
+      HEIGHT: 180, // Large central display for current orb
       BORDER_RADIUS: 8,
     },
     DRAWN_ORBS_ROW: {
@@ -67,7 +67,7 @@ export class MainScreen extends Container {
   // Game UI
   private resourceBar!: Container;
   private gameStatusArea!: Container;
-  private orbInfoRow!: Container;
+  private centralOrbDisplay!: Container;
   private drawnOrbsRow!: Container;
   private eventLogRow!: Container;
   private controlPanel!: Container;
@@ -86,9 +86,9 @@ export class MainScreen extends Container {
   private tempMultiplierLabel!: Label;
 
   // Game state labels
-  private gameStateLabel!: Label;
   private levelLabel!: Label;
-  private orbBagLabel!: Label;
+  private currentOrbLabel!: Label;
+  private currentOrbEmoji!: Label;
   private orbsDrawnList!: OrbsDrawnList;
   private eventLogList!: EventLogList;
 
@@ -150,7 +150,7 @@ export class MainScreen extends Container {
     // UI sub-containers - all visible simultaneously in rows
     this.resourceBar = new Container();
     this.gameStatusArea = new Container();
-    this.orbInfoRow = new Container();
+    this.centralOrbDisplay = new Container();
     this.drawnOrbsRow = new Container();
     this.eventLogRow = new Container();
     this.controlPanel = new Container();
@@ -158,7 +158,7 @@ export class MainScreen extends Container {
 
     this.mainContainer.addChild(this.resourceBar);
     this.mainContainer.addChild(this.gameStatusArea);
-    this.mainContainer.addChild(this.orbInfoRow);
+    this.mainContainer.addChild(this.centralOrbDisplay);
     this.mainContainer.addChild(this.drawnOrbsRow);
     this.mainContainer.addChild(this.eventLogRow);
     this.mainContainer.addChild(this.controlPanel);
@@ -170,7 +170,7 @@ export class MainScreen extends Container {
     this.createUserInfo();
     this.createResourceBar();
     this.createGameStatusArea();
-    this.createOrbInfoRow();
+    this.createCentralOrbDisplay();
     this.createDrawnOrbsRow();
     this.createEventLogRow();
     this.createControlPanel();
@@ -303,81 +303,66 @@ export class MainScreen extends Container {
   private createGameStatusArea(): void {
     const layout = MainScreen.LAYOUT;
 
-    // Game status area background
-    const gameBackground = new Graphics();
-    gameBackground.roundRect(
-      0,
-      0,
-      layout.GAME_STATUS.WIDTH,
-      layout.GAME_STATUS.HEIGHT,
-      layout.GAME_STATUS.BORDER_RADIUS,
-    );
-    gameBackground.fill(0x1a1a2a);
-    gameBackground.stroke({ color: 0x8a4fff, width: 2 });
-    this.gameStatusArea.addChild(gameBackground);
-
-    const centerX = layout.GAME_STATUS.WIDTH / 2;
-    const centerY = layout.GAME_STATUS.HEIGHT / 2;
-
-    // Moon bag representation
-    const bag = new Graphics();
-    bag.circle(0, 0, 60); // Smaller bag to fit reduced height
-    bag.fill(0x2a2a3a);
-    bag.stroke({ color: 0xc0c0d0, width: 3 });
-    bag.position.set(centerX, centerY - 20);
-    this.gameStatusArea.addChild(bag);
-
-    // Bag label with game state
-    this.gameStateLabel = new Label({
-      text: "🎒 Moon Bag - Ready to Play",
-      style: { fill: 0xc0c0d0, align: "center", fontSize: 16 },
-    });
-    this.gameStateLabel.anchor.set(0.5);
-    this.gameStateLabel.position.set(centerX, centerY + 50);
-    this.gameStatusArea.addChild(this.gameStateLabel);
-
-    // Level label
+    // Simple level title - no background, just the text
     this.levelLabel = new Label({
       text: "Level 1",
       style: {
         fill: 0x8a4fff,
         align: "center",
-        fontSize: 14,
+        fontSize: 24,
         fontWeight: "bold",
       },
     });
     this.levelLabel.anchor.set(0.5);
-    this.levelLabel.position.set(centerX, centerY + 75);
+    this.levelLabel.position.set(layout.GAME_STATUS.WIDTH / 2, layout.GAME_STATUS.HEIGHT / 2);
     this.gameStatusArea.addChild(this.levelLabel);
   }
 
-  private createOrbInfoRow(): void {
+  private createCentralOrbDisplay(): void {
     const layout = MainScreen.LAYOUT;
 
-    // Orb info row background
-    const orbBackground = new Graphics();
-    orbBackground.roundRect(
+    // Create background for central orb display - larger than other rows
+    const centralBackground = new Graphics();
+    centralBackground.roundRect(
       0,
       0,
-      layout.ORB_INFO_ROW.WIDTH,
-      layout.ORB_INFO_ROW.HEIGHT,
-      layout.ORB_INFO_ROW.BORDER_RADIUS,
+      layout.CENTRAL_ORB_DISPLAY.WIDTH,
+      layout.CENTRAL_ORB_DISPLAY.HEIGHT,
+      layout.CENTRAL_ORB_DISPLAY.BORDER_RADIUS,
     );
-    orbBackground.fill(0x1a1a2a);
-    orbBackground.stroke({ color: 0x8a4fff, width: 2 });
-    this.orbInfoRow.addChild(orbBackground);
+    centralBackground.fill(0x1a1a2a);
+    centralBackground.stroke({ color: 0x8a4fff, width: 2 });
+    this.centralOrbDisplay.addChild(centralBackground);
 
-    const centerX = layout.ORB_INFO_ROW.WIDTH / 2;
-    const centerY = layout.ORB_INFO_ROW.HEIGHT / 2;
+    const centerX = layout.CENTRAL_ORB_DISPLAY.WIDTH / 2;
+    const centerY = layout.CENTRAL_ORB_DISPLAY.HEIGHT / 2;
 
-    // Orb bag contents label
-    this.orbBagLabel = new Label({
-      text: "No orbs yet",
-      style: { fill: 0x999999, align: "center", fontSize: 14 },
+    // Large emoji for the current orb
+    this.currentOrbEmoji = new Label({
+      text: "🎲",
+      style: {
+        fill: 0xffffff,
+        align: "center",
+        fontSize: 72, // Very large emoji
+      },
     });
-    this.orbBagLabel.anchor.set(0.5);
-    this.orbBagLabel.position.set(centerX, centerY);
-    this.orbInfoRow.addChild(this.orbBagLabel);
+    this.currentOrbEmoji.anchor.set(0.5);
+    this.currentOrbEmoji.position.set(centerX, centerY - 30);
+    this.centralOrbDisplay.addChild(this.currentOrbEmoji);
+
+    // Current orb name/description
+    this.currentOrbLabel = new Label({
+      text: "Pull an orb to see result",
+      style: {
+        fill: 0xc0c0d0,
+        align: "center",
+        fontSize: 18,
+        fontWeight: "bold",
+      },
+    });
+    this.currentOrbLabel.anchor.set(0.5);
+    this.currentOrbLabel.position.set(centerX, centerY + 50);
+    this.centralOrbDisplay.addChild(this.currentOrbLabel);
   }
 
   private createDrawnOrbsRow(): void {
@@ -618,7 +603,7 @@ export class MainScreen extends Container {
       layout.PANEL_SPACING +
       layout.GAME_STATUS.HEIGHT +
       layout.PANEL_SPACING +
-      layout.ORB_INFO_ROW.HEIGHT +
+      layout.CENTRAL_ORB_DISPLAY.HEIGHT +
       layout.PANEL_SPACING +
       layout.DRAWN_ORBS_ROW.HEIGHT +
       layout.PANEL_SPACING +
@@ -649,10 +634,10 @@ export class MainScreen extends Container {
     this.gameStatusArea.y = currentY;
     currentY += layout.GAME_STATUS.HEIGHT + layout.PANEL_SPACING;
 
-    // Orb info row
-    this.orbInfoRow.x = -layout.ORB_INFO_ROW.WIDTH / 2;
-    this.orbInfoRow.y = currentY;
-    currentY += layout.ORB_INFO_ROW.HEIGHT + layout.PANEL_SPACING;
+    // Central orb display
+    this.centralOrbDisplay.x = -layout.CENTRAL_ORB_DISPLAY.WIDTH / 2;
+    this.centralOrbDisplay.y = currentY;
+    currentY += layout.CENTRAL_ORB_DISPLAY.HEIGHT + layout.PANEL_SPACING;
 
     // Drawn orbs row
     this.drawnOrbsRow.x = -layout.DRAWN_ORBS_ROW.WIDTH / 2;
@@ -682,7 +667,7 @@ export class MainScreen extends Container {
       this.titleLabel,
       this.resourceBar,
       this.gameStatusArea,
-      this.orbInfoRow,
+      this.centralOrbDisplay,
       this.drawnOrbsRow,
       this.eventLogRow,
       this.controlPanel,
@@ -1255,23 +1240,6 @@ export class MainScreen extends Container {
       }
       this.lastGameState = activeGame.game_state;
 
-      // Update game state
-      let gameStateText = "🎒 Moon Bag";
-      switch (activeGame.game_state) {
-        case "Active":
-          gameStateText = "🎮 Game Active";
-          break;
-        case "LevelComplete":
-          gameStateText = "🎉 Level Complete!";
-          break;
-        case "GameWon":
-          gameStateText = "🏆 Game Won!";
-          break;
-        case "GameLost":
-          gameStateText = "💀 Game Over";
-          break;
-      }
-      this.gameStateLabel.text = gameStateText;
 
       // Update button states based on game state
       this.updateControlsForGameState(
@@ -1286,29 +1254,9 @@ export class MainScreen extends Container {
       this.multiplierLabel.text = "⚡ --";
       this.tempMultiplierLabel.visible = false;
       this.levelLabel.text = "No Game";
-      this.gameStateLabel.text = "🎒 Moon Bag - Ready to Play";
       this.updateControlsForGameState("", false);
     }
 
-    // Update orb bag display
-    if (data.orbBagSlots && data.orbBagSlots.length > 0) {
-      const orbCounts: Record<string, number> = {};
-      data.orbBagSlots
-        .filter((slot) => slot.is_active)
-        .forEach((slot) => {
-          orbCounts[slot.orb_type] = (orbCounts[slot.orb_type] || 0) + 1;
-        });
-
-      const orbTexts = Object.entries(orbCounts).map(([type, count]) => {
-        const emoji = this.getOrbEmoji(type);
-        return `${emoji}${count}`;
-      });
-
-      this.orbBagLabel.text =
-        orbTexts.length > 0 ? orbTexts.join(" ") : "Empty bag";
-    } else {
-      this.orbBagLabel.text = "No orbs yet";
-    }
 
     // Update drawn orbs list and track new orbs
     if (data.drawnOrbs && activeGame) {
@@ -1345,13 +1293,58 @@ export class MainScreen extends Container {
           `🎯 Drew ${orbEmoji} ${newestOrb.orb_type}${effectMessage}`,
           newestOrb.orb_type === "SingleBomb" ? "error" : "info",
         );
+
+        // Update central orb display with the newest orb
+        this.updateCentralOrbDisplay(newestOrb.orb_type);
       }
       this.lastOrbsDrawnCount = newOrbsCount;
 
       this.orbsDrawnList.updateDrawnOrbs(data.drawnOrbs, activeGame.game_id);
+      
+      // Show most recent orb in central display if any orbs have been drawn
+      if (currentGameOrbs.length > 0) {
+        const mostRecentOrb = currentGameOrbs.sort(
+          (a, b) => b.draw_index - a.draw_index,
+        )[0];
+        this.updateCentralOrbDisplay(mostRecentOrb.orb_type);
+      } else {
+        // Reset to default state if no orbs drawn
+        this.resetCentralOrbDisplay();
+      }
     } else {
       this.orbsDrawnList.updateDrawnOrbs([]);
+      this.resetCentralOrbDisplay();
     }
+  }
+
+  /** Update the central orb display with the pulled orb */
+  private updateCentralOrbDisplay(orbType: string): void {
+    const orbEmoji = this.getOrbEmoji(orbType);
+    this.currentOrbEmoji.text = orbEmoji;
+    this.currentOrbLabel.text = orbType;
+    
+    // Set color based on orb type
+    switch (orbType) {
+      case "Health":
+        this.currentOrbLabel.style.fill = 0xff4a6a; // Red for health
+        break;
+      case "FivePoints":
+        this.currentOrbLabel.style.fill = 0x8a4fff; // Purple for points
+        break;
+      case "SingleBomb":
+        this.currentOrbLabel.style.fill = 0xff4444; // Red for bomb
+        break;
+      default:
+        this.currentOrbLabel.style.fill = 0xc0c0d0; // Default silver
+        break;
+    }
+  }
+
+  /** Reset central orb display to default state */
+  private resetCentralOrbDisplay(): void {
+    this.currentOrbEmoji.text = "🎲";
+    this.currentOrbLabel.text = "Pull an orb to see result";
+    this.currentOrbLabel.style.fill = 0xc0c0d0; // Default silver
   }
 
   /** Get emoji for orb type */
