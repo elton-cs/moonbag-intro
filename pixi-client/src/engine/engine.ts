@@ -62,11 +62,14 @@ export class CreationEngine extends Application {
     document.addEventListener("visibilitychange", this.visibilityChange);
 
     // Init PixiJS assets with this asset manifest
-    await Assets.init({ manifest, basePath: "assets" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await Assets.init({ manifest: manifest as any, basePath: "assets" });
     await Assets.loadBundle("preload");
 
     // List all existing bundles names
-    const allBundles = manifest.bundles.map((item) => item.name);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const allBundles =
+      (manifest as any).bundles?.map((item: any) => item.name) || [];
     // Start up background loading of all bundles
     Assets.backgroundLoadBundle(allBundles);
   }

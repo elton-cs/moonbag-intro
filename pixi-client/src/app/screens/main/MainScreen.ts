@@ -79,7 +79,6 @@ export class MainScreen extends Container {
 
   // Resource labels (updateable)
   private healthLabel!: Label;
-  private moonRocksLabel!: Label;
   private moonRocksDisplayLabel!: Label;
   private cheddahLabel!: Label;
   private pointsLabel!: Label;
@@ -140,7 +139,7 @@ export class MainScreen extends Container {
       this.backgroundImage = Sprite.from("preload/background.png");
       this.backgroundImage.anchor.set(0.5);
       this.addChild(this.backgroundImage);
-    } catch (error) {
+    } catch {
       console.log("Background image not found, using solid color background");
     }
 
@@ -174,7 +173,7 @@ export class MainScreen extends Container {
     this.mainContainer.addChild(this.eventLogRow);
     this.mainContainer.addChild(this.controlPanel);
     this.mainContainer.addChild(this.settingsContainer);
-    
+
     // Add confetti container on top of everything for visual effects
     this.mainContainer.addChild(this.confettiContainer);
   }
@@ -240,7 +239,12 @@ export class MainScreen extends Container {
     // Large Moon Rocks label
     this.moonRocksDisplayLabel = new Label({
       text: "🌙 0",
-      style: { fill: 0xffdd44, fontSize: 20, fontWeight: "bold", align: "center" },
+      style: {
+        fill: 0xffdd44,
+        fontSize: 20,
+        fontWeight: "bold",
+        align: "center",
+      },
     });
     this.moonRocksDisplayLabel.anchor.set(0.5);
     this.moonRocksDisplayLabel.position.set(
@@ -330,7 +334,6 @@ export class MainScreen extends Container {
     this.tempMultiplierLabel.visible = false; // Hidden by default
     this.resourceBar.addChild(this.tempMultiplierLabel);
   }
-
 
   private createCentralOrbDisplay(): void {
     const layout = MainScreen.LAYOUT;
@@ -611,7 +614,7 @@ export class MainScreen extends Container {
     // Scale and center background image if it exists
     if (this.backgroundImage) {
       this.backgroundImage.position.set(centerX, centerY);
-      
+
       // Scale to cover the screen while maintaining aspect ratio
       const scaleX = width / this.backgroundImage.texture.width;
       const scaleY = height / this.backgroundImage.texture.height;
@@ -734,7 +737,6 @@ export class MainScreen extends Container {
     // Clear all GraphQL subscriptions
     this.gameDataService.clearSubscriptions();
   }
-
 
   /** Handle start game button press */
   private async handleStartGame(): Promise<void> {
@@ -1276,7 +1278,6 @@ export class MainScreen extends Container {
       }
       this.lastGameState = activeGame.game_state;
 
-
       // Update button states based on game state
       this.updateControlsForGameState(
         activeGame.game_state,
@@ -1294,7 +1295,6 @@ export class MainScreen extends Container {
       this.resetCentralOrbDisplay();
       this.updateControlsForGameState("", false);
     }
-
 
     // Update drawn orbs list and track new orbs
     if (data.drawnOrbs && activeGame) {
@@ -1339,7 +1339,7 @@ export class MainScreen extends Container {
       this.lastOrbsDrawnCount = newOrbsCount;
 
       this.orbsDrawnList.updateDrawnOrbs(data.drawnOrbs, activeGame.game_id);
-      
+
       // Show most recent orb in central display if any orbs have been drawn
       if (currentGameOrbs.length > 0) {
         const mostRecentOrb = currentGameOrbs.sort(
@@ -1361,7 +1361,7 @@ export class MainScreen extends Container {
     const orbEmoji = this.getOrbEmoji(orbType);
     this.currentOrbEmoji.text = orbEmoji;
     this.currentOrbLabel.text = orbType;
-    
+
     // Set color based on orb type
     switch (orbType) {
       case "Health":
@@ -1389,36 +1389,54 @@ export class MainScreen extends Container {
   /** Flash screen red for damage */
   private flashDamage(): void {
     this.flashOverlay.clear();
-    this.flashOverlay.rect(0, 0, this.flashOverlay.width || 1920, this.flashOverlay.height || 1080);
+    this.flashOverlay.rect(
+      0,
+      0,
+      this.flashOverlay.width || 1920,
+      this.flashOverlay.height || 1080,
+    );
     this.flashOverlay.fill(0xff0000); // Bright red
-    
+
     // Quick bright flash then fade out
-    animate(this.flashOverlay, { alpha: [0, 0.6, 0] }, { 
-      duration: 0.4, 
-      ease: "easeOut" 
-    });
+    animate(
+      this.flashOverlay,
+      { alpha: [0, 0.6, 0] },
+      {
+        duration: 0.4,
+        ease: "easeOut",
+      },
+    );
   }
 
   /** Flash screen green for healing/points */
   private flashHealing(): void {
     this.flashOverlay.clear();
-    this.flashOverlay.rect(0, 0, this.flashOverlay.width || 1920, this.flashOverlay.height || 1080);
+    this.flashOverlay.rect(
+      0,
+      0,
+      this.flashOverlay.width || 1920,
+      this.flashOverlay.height || 1080,
+    );
     this.flashOverlay.fill(0x00ff00); // Bright green
-    
+
     // Quick bright flash then fade out
-    animate(this.flashOverlay, { alpha: [0, 0.5, 0] }, { 
-      duration: 0.5, 
-      ease: "easeOut" 
-    });
+    animate(
+      this.flashOverlay,
+      { alpha: [0, 0.5, 0] },
+      {
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    );
   }
 
   /** Create star confetti animation for point increases */
   private createStarConfetti(pointsGained: number): void {
     const starEmojis = ["⭐", "🌟", "✨", "💫"];
-    
+
     // More stars for higher point gains (minimum 6, max 20)
     const numStars = Math.min(20, Math.max(6, pointsGained * 2 + 4));
-    
+
     for (let i = 0; i < numStars; i++) {
       // Create star label
       const star = new Label({
@@ -1428,22 +1446,22 @@ export class MainScreen extends Container {
           align: "center",
         },
       });
-      
+
       star.anchor.set(0.5);
-      
+
       // Start from center of screen
       star.position.set(0, 0);
       star.alpha = 0;
       star.scale.set(0);
-      
+
       this.confettiContainer.addChild(star);
-      
+
       // Random direction and distance
       const angle = (Math.PI * 2 * i) / numStars + (Math.random() - 0.5) * 0.8;
       const distance = 200 + Math.random() * 300;
       const finalX = Math.cos(angle) * distance;
       const finalY = Math.sin(angle) * distance;
-      
+
       // Animate star burst
       animate(
         star,
@@ -1457,7 +1475,7 @@ export class MainScreen extends Container {
         {
           duration: 1.5 + Math.random() * 0.5, // 1.5-2 seconds
           ease: "easeOut",
-        }
+        },
       ).then(() => {
         // Clean up after animation
         this.confettiContainer.removeChild(star);

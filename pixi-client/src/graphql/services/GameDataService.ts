@@ -328,7 +328,8 @@ export class GameDataService {
 
       // Enhanced debugging - check slot coverage
       if (shopInventory.length > 0) {
-        const slots = shopInventory.map((item) => item.slot_index).sort();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const slots = shopInventory.map((item: any) => item.slot_index).sort();
         const expectedSlots = [0, 1, 2, 3, 4, 5];
         const missingSlots = expectedSlots.filter(
           (slot) => !slots.includes(slot),
@@ -348,7 +349,8 @@ export class GameDataService {
         }
 
         // Log each item for detailed inspection
-        shopInventory.forEach((item, index) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        shopInventory.forEach((item: any, index: number) => {
           console.log(
             `🛒 ITEM ${index}: Slot ${item.slot_index} - ${item.orb_type} (${item.rarity}) - ${item.base_price} cheddah`,
           );

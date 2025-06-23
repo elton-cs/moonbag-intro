@@ -76,7 +76,7 @@ export class ShopScreen extends Container {
       this.backgroundImage = Sprite.from("preload/background.png");
       this.backgroundImage.anchor.set(0.5);
       this.addChild(this.backgroundImage);
-    } catch (error) {
+    } catch {
       console.log("Background image not found, using solid color background");
     }
   }
@@ -527,7 +527,7 @@ export class ShopScreen extends Container {
     // Scale and center background image if it exists
     if (this.backgroundImage) {
       this.backgroundImage.position.set(centerX, centerY);
-      
+
       // Scale to cover the screen while maintaining aspect ratio
       const scaleX = width / this.backgroundImage.texture.width;
       const scaleY = height / this.backgroundImage.texture.height;
