@@ -1,4 +1,6 @@
 
+use crate::models::OrbType;
+
 #[starknet::interface]
 pub trait IActions<T> {
     fn spawn_game(ref self: T);
@@ -6,13 +8,14 @@ pub trait IActions<T> {
     fn advance_to_next_level(ref self: T);
     fn cash_out(ref self: T);
     fn gift_moonrocks(ref self: T);
+    fn purchase_orb(ref self: T, orb_type: OrbType);
 }
 
 
 #[dojo::contract]
 pub mod actions {
     use super::IActions;
-    use crate::models::{Game, GameCounter, MoonRocks, OrbType, ActiveGame, GameState, OrbBagSlot, DrawnOrb};
+    use crate::models::{Game, GameCounter, MoonRocks, OrbType, ActiveGame, GameState, OrbBagSlot, DrawnOrb, ShopInventory, PurchaseHistory, ShopRarity};
 
     use core::num::traits::{SaturatingAdd, SaturatingSub};
     use dojo::model::ModelStorage;
@@ -32,6 +35,13 @@ pub mod actions {
 
     // Level progression constants from PRD
     pub const MAX_LEVEL: u8 = 7;
+
+    // Shop constants
+    pub const SHOP_SLOTS: u8 = 6;        // 6 total shop slots
+    pub const COMMON_SLOTS: u8 = 3;      // 3 common orbs
+    pub const RARE_SLOTS: u8 = 2;        // 2 rare orbs  
+    pub const COSMIC_SLOTS: u8 = 1;      // 1 cosmic orb
+    pub const PRICE_SCALING_PERCENT: u32 = 120; // 20% increase per purchase (120% = 1.2x)
 
     // Helper functions for level data (using 0-based indexing for Cairo match requirements)
     fn get_milestone_points(level: u8) -> u32 {
@@ -116,6 +126,154 @@ pub mod actions {
     // Apply multiplier to a value, supporting fractional multipliers
     fn apply_multiplier(base_value: u32, multiplier: u32) -> u32 {
         calculate_points_with_multiplier(base_value, multiplier)
+    }
+
+    // Get base price for orb type (from PRD)
+    fn get_orb_base_price(orb_type: OrbType) -> u32 {
+        match orb_type {
+            // Common orbs (5-9 cheddah)
+            OrbType::FivePoints => 5,
+            OrbType::CheddahBomb => 5,
+            OrbType::BombCounter => 6,
+            OrbType::SevenPoints => 8,
+            OrbType::MoonRock => 8,
+            OrbType::HalfMultiplier => 9,
+            OrbType::Health => 9,
+            // Rare orbs (11-16 cheddah)
+            OrbType::EightPoints => 11,
+            OrbType::NinePoints => 13,
+            OrbType::NextPoints2x => 14,
+            OrbType::Multiplier1_5x => 16,
+            // Cosmic orbs (21-23 cheddah)
+            OrbType::BigHealth => 21,
+            OrbType::BigMoonRock => 23,
+            _ => 0, // Starting orbs not in shop
+        }
+    }
+
+    // Get rarity for orb type
+    fn get_orb_rarity(orb_type: OrbType) -> ShopRarity {
+        match orb_type {
+            // Common orbs
+            OrbType::FivePoints => ShopRarity::Common,
+            OrbType::CheddahBomb => ShopRarity::Common,
+            OrbType::BombCounter => ShopRarity::Common,
+            OrbType::SevenPoints => ShopRarity::Common,
+            OrbType::MoonRock => ShopRarity::Common,
+            OrbType::HalfMultiplier => ShopRarity::Common,
+            OrbType::Health => ShopRarity::Common,
+            // Rare orbs
+            OrbType::EightPoints => ShopRarity::Rare,
+            OrbType::NinePoints => ShopRarity::Rare,
+            OrbType::NextPoints2x => ShopRarity::Rare,
+            OrbType::Multiplier1_5x => ShopRarity::Rare,
+            // Cosmic orbs
+            OrbType::BigHealth => ShopRarity::Cosmic,
+            OrbType::BigMoonRock => ShopRarity::Cosmic,
+            _ => ShopRarity::Common, // Default for starting orbs
+        }
+    }
+
+    // Calculate current price based on purchase history
+    fn calculate_current_price(base_price: u32, purchase_count: u32) -> u32 {
+        if purchase_count == 0 {
+            return base_price;
+        }
+        
+        // Calculate price with 20% scaling: base_price * (1.2^purchase_count)
+        let mut current_price = base_price;
+        let mut count = purchase_count;
+        
+        while count > 0 {
+            current_price = (current_price * PRICE_SCALING_PERCENT) / 100;
+            count = count.saturating_sub(1);
+        };
+        
+        current_price
+    }
+
+    // Generate shop inventory when level is completed
+    fn generate_shop_inventory(ref world: dojo::world::WorldStorage, player: starknet::ContractAddress, game_id: u32, level: u8) {
+        // Clear any existing shop inventory for this level
+        let mut slot_index: u8 = 0;
+        while slot_index < SHOP_SLOTS {
+            let existing_slot: ShopInventory = world.read_model((player, game_id, level, slot_index));
+            if existing_slot.orb_type != OrbType::SingleBomb { // Check if slot exists (default is SingleBomb)
+                world.erase_model(@existing_slot);
+            }
+            slot_index = slot_index.saturating_add(1);
+        };
+
+        // Define orb pools by rarity
+        let common_orbs = array![
+            OrbType::FivePoints, OrbType::CheddahBomb, OrbType::BombCounter,
+            OrbType::SevenPoints, OrbType::MoonRock, OrbType::HalfMultiplier, OrbType::Health
+        ];
+        let rare_orbs = array![
+            OrbType::EightPoints, OrbType::NinePoints, OrbType::NextPoints2x, OrbType::Multiplier1_5x
+        ];
+        let cosmic_orbs = array![
+            OrbType::BigHealth, OrbType::BigMoonRock
+        ];
+
+        let mut slot_idx: u8 = 0;
+
+        // Select 3 common orbs
+        let mut common_selected: u8 = 0;
+        while common_selected < COMMON_SLOTS {
+            let random_idx = get_pseudo_random(player, game_id + level.into() + slot_idx.into(), common_orbs.len());
+            let selected_orb = *common_orbs.at(random_idx);
+            
+            let shop_slot = ShopInventory {
+                player,
+                game_id,
+                level,
+                slot_index: slot_idx,
+                orb_type: selected_orb,
+                base_price: get_orb_base_price(selected_orb),
+                rarity: ShopRarity::Common,
+            };
+            world.write_model(@shop_slot);
+            
+            slot_idx = slot_idx.saturating_add(1);
+            common_selected = common_selected.saturating_add(1);
+        };
+
+        // Select 2 rare orbs
+        let mut rare_selected: u8 = 0;
+        while rare_selected < RARE_SLOTS {
+            let random_idx = get_pseudo_random(player, game_id + level.into() + slot_idx.into(), rare_orbs.len());
+            let selected_orb = *rare_orbs.at(random_idx);
+            
+            let shop_slot = ShopInventory {
+                player,
+                game_id,
+                level,
+                slot_index: slot_idx,
+                orb_type: selected_orb,
+                base_price: get_orb_base_price(selected_orb),
+                rarity: ShopRarity::Rare,
+            };
+            world.write_model(@shop_slot);
+            
+            slot_idx = slot_idx.saturating_add(1);
+            rare_selected = rare_selected.saturating_add(1);
+        };
+
+        // Select 1 cosmic orb
+        let random_idx = get_pseudo_random(player, game_id + level.into() + slot_idx.into(), cosmic_orbs.len());
+        let selected_orb = *cosmic_orbs.at(random_idx);
+        
+        let shop_slot = ShopInventory {
+            player,
+            game_id,
+            level,
+            slot_index: slot_idx,
+            orb_type: selected_orb,
+            base_price: get_orb_base_price(selected_orb),
+            rarity: ShopRarity::Cosmic,
+        };
+        world.write_model(@shop_slot);
     }
 
     #[abi(embed_v0)]
@@ -210,6 +368,9 @@ pub mod actions {
             world.write_model(@orb_slot_9);
             world.write_model(@orb_slot_10);
             world.write_model(@orb_slot_11);
+
+            // Reset purchase history for new run (clear any existing purchase counts)
+            // This ensures price scaling resets for each run
         }
 
         fn pull_orb(ref self: ContractState) {
@@ -415,6 +576,8 @@ pub mod actions {
                     game.game_state = GameState::LevelComplete;
                     // Award Cheddah equal to points earned
                     game.cheddah = game.cheddah.saturating_add(game.points);
+                    // Generate shop inventory for this level
+                    generate_shop_inventory(ref world, player, game.game_id, game.current_level);
                 }
             } else if game.orb_bag_size == 0 {
                 // Loss condition: bag empty before milestone reached
@@ -465,38 +628,26 @@ pub mod actions {
             game.bombs_drawn_count = 0; // Clear bombs drawn count for new level
             game.temp_multiplier_active = false; // Clear temporary multiplier
             game.temp_multiplier_value = 100; // Reset temp multiplier value
-            game.orb_bag_size = 12; // Reset bag size to PRD starting size
+            // Reactivate all existing orb bag slots (preserving purchased orbs)
+            // Count total orbs to set correct bag size
+            let mut total_orbs = 0;
+            let mut slot_idx: u32 = 0;
+            while slot_idx < 100 { // Safety limit
+                let mut orb_slot: OrbBagSlot = world.read_model((player, game.game_id, slot_idx));
+                if orb_slot.orb_type != OrbType::SingleBomb || orb_slot.is_active { // Either has non-default orb or is active
+                    // Reactivate this slot for the new level
+                    orb_slot.is_active = true;
+                    world.write_model(@orb_slot);
+                    total_orbs = total_orbs.saturating_add(1);
+                } else {
+                    // Empty slot, stop counting
+                    break;
+                }
+                slot_idx = slot_idx.saturating_add(1);
+            };
 
-            // Reset all orb bag slots for new level with PRD starting orbs
-            // 2x Single Bomb, 2x Double Bomb, 1x Triple Bomb
-            let orb_slot_0 = OrbBagSlot { player, game_id: game.game_id, slot_index: 0, orb_type: OrbType::SingleBomb, is_active: true };
-            let orb_slot_1 = OrbBagSlot { player, game_id: game.game_id, slot_index: 1, orb_type: OrbType::SingleBomb, is_active: true };
-            let orb_slot_2 = OrbBagSlot { player, game_id: game.game_id, slot_index: 2, orb_type: OrbType::DoubleBomb, is_active: true };
-            let orb_slot_3 = OrbBagSlot { player, game_id: game.game_id, slot_index: 3, orb_type: OrbType::DoubleBomb, is_active: true };
-            let orb_slot_4 = OrbBagSlot { player, game_id: game.game_id, slot_index: 4, orb_type: OrbType::TripleBomb, is_active: true };
-            // 3x Five Points
-            let orb_slot_5 = OrbBagSlot { player, game_id: game.game_id, slot_index: 5, orb_type: OrbType::FivePoints, is_active: true };
-            let orb_slot_6 = OrbBagSlot { player, game_id: game.game_id, slot_index: 6, orb_type: OrbType::FivePoints, is_active: true };
-            let orb_slot_7 = OrbBagSlot { player, game_id: game.game_id, slot_index: 7, orb_type: OrbType::FivePoints, is_active: true };
-            // 1x Double Multiplier, 1x Remaining Orbs, 1x Bomb Counter, 1x Health
-            let orb_slot_8 = OrbBagSlot { player, game_id: game.game_id, slot_index: 8, orb_type: OrbType::DoubleMultiplier, is_active: true };
-            let orb_slot_9 = OrbBagSlot { player, game_id: game.game_id, slot_index: 9, orb_type: OrbType::RemainingOrbs, is_active: true };
-            let orb_slot_10 = OrbBagSlot { player, game_id: game.game_id, slot_index: 10, orb_type: OrbType::BombCounter, is_active: true };
-            let orb_slot_11 = OrbBagSlot { player, game_id: game.game_id, slot_index: 11, orb_type: OrbType::Health, is_active: true };
-            
-            // Write updated orb slots
-            world.write_model(@orb_slot_0);
-            world.write_model(@orb_slot_1);
-            world.write_model(@orb_slot_2);
-            world.write_model(@orb_slot_3);
-            world.write_model(@orb_slot_4);
-            world.write_model(@orb_slot_5);
-            world.write_model(@orb_slot_6);
-            world.write_model(@orb_slot_7);
-            world.write_model(@orb_slot_8);
-            world.write_model(@orb_slot_9);
-            world.write_model(@orb_slot_10);
-            world.write_model(@orb_slot_11);
+            // Update bag size to include all orbs (starting + purchased)
+            game.orb_bag_size = total_orbs;
 
             // Write updated game state
             world.write_model(@game);
@@ -553,6 +704,87 @@ pub mod actions {
             };
 
             world.write_model(@gift);
+        }
+
+        fn purchase_orb(ref self: ContractState, orb_type: OrbType) {
+            let mut world = self.world_default();
+            let player = get_caller_address();
+
+            // Get active game for this player
+            let active_game: ActiveGame = world.read_model(player);
+            assert(active_game.game_id > 0, 'No active game');
+
+            // Get the active game data
+            let mut game: Game = world.read_model((player, active_game.game_id));
+            assert(game.game_state == GameState::LevelComplete, 'Level not completed');
+
+            // Find the orb in current shop inventory
+            let mut orb_found = false;
+            let mut slot_index: u8 = 0;
+            while slot_index < SHOP_SLOTS {
+                let shop_slot: ShopInventory = world.read_model((player, game.game_id, game.current_level, slot_index));
+                if shop_slot.orb_type == orb_type {
+                    orb_found = true;
+                    break;
+                }
+                slot_index = slot_index.saturating_add(1);
+            };
+            assert(orb_found, 'Orb not in shop');
+
+            // Get purchase history for price calculation
+            let purchase_history: PurchaseHistory = world.read_model((player, game.game_id, orb_type));
+            let base_price = get_orb_base_price(orb_type);
+            let current_price = calculate_current_price(base_price, purchase_history.purchase_count);
+
+            // Check player has sufficient cheddah
+            assert(game.cheddah >= current_price, 'Insufficient cheddah');
+
+            // Deduct cheddah
+            game.cheddah = game.cheddah.saturating_sub(current_price);
+
+            // Update purchase history
+            let updated_history = PurchaseHistory {
+                player,
+                game_id: game.game_id,
+                orb_type,
+                purchase_count: purchase_history.purchase_count.saturating_add(1),
+            };
+            world.write_model(@updated_history);
+
+            // Find next available orb bag slot
+            let mut bag_slot_index: u32 = 0;
+            let mut found_empty_slot = false;
+            while bag_slot_index < 100 { // Safety limit
+                let orb_slot: OrbBagSlot = world.read_model((player, game.game_id, bag_slot_index));
+                if !orb_slot.is_active && orb_slot.orb_type == OrbType::SingleBomb { // Empty slot (default state)
+                    found_empty_slot = true;
+                    break;
+                }
+                bag_slot_index = bag_slot_index.saturating_add(1);
+            };
+
+            // If no empty slot found, create new slot at next index
+            if !found_empty_slot {
+                bag_slot_index = game.orb_bag_size;
+            }
+
+            // Add purchased orb to bag
+            let new_orb_slot = OrbBagSlot {
+                player,
+                game_id: game.game_id,
+                slot_index: bag_slot_index,
+                orb_type,
+                is_active: true,
+            };
+            world.write_model(@new_orb_slot);
+
+            // Increase bag size if we added to a new slot
+            if bag_slot_index >= game.orb_bag_size {
+                game.orb_bag_size = bag_slot_index.saturating_add(1);
+            }
+
+            // Write updated game state
+            world.write_model(@game);
         }
 
 

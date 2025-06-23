@@ -123,3 +123,41 @@ pub struct DrawnOrb {
     pub orb_type: OrbType,
 }
 
+// Shop rarity enum for orb categorization and pricing
+#[derive(Serde, Copy, Drop, Introspect, PartialEq)]
+pub enum ShopRarity {
+    Common,    // 3 slots in shop, base cost multiplier: 1x
+    Rare,      // 2 slots in shop, base cost multiplier: 1x
+    Cosmic,    // 1 slot in shop, base cost multiplier: 1x
+}
+
+// Shop inventory model - tracks available orbs for purchase per level
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct ShopInventory {
+    #[key]
+    pub player: ContractAddress,
+    #[key] 
+    pub game_id: u32,
+    #[key]
+    pub level: u8,
+    #[key]
+    pub slot_index: u8,  // 0-5 for 6 shop slots
+    pub orb_type: OrbType,
+    pub base_price: u32,
+    pub rarity: ShopRarity,
+}
+
+// Purchase history model - tracks purchases per orb type for price scaling
+#[derive(Copy, Drop, Serde)]
+#[dojo::model]
+pub struct PurchaseHistory {
+    #[key]
+    pub player: ContractAddress,
+    #[key]
+    pub game_id: u32,
+    #[key]
+    pub orb_type: OrbType,
+    pub purchase_count: u32,
+}
+

@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x19606f2ac6d2ea7c689db3bcf8fe28ec60e65d0c00bb1c13d7f81abe8dc95d1",
-      "class_hash": "0x5b2681b7bfc10c46474c8b3b34fad67c5c91eec44b480c5af95150a73300955",
+      "address": "0x75d7552f40a3a24c2a701e3c03ef52a2bbcc9eceab8bdc5cca5c430bf4ad8ad",
+      "class_hash": "0x774faec127ce9b0a1ce7d772e1e4328ecb9683652512f5de1f6a916c9c2b279",
       "abi": [
         {
           "type": "impl",
@@ -1387,6 +1387,84 @@
           "interface_name": "dojo_intro::systems::actions::IActions"
         },
         {
+          "type": "enum",
+          "name": "dojo_intro::models::OrbType",
+          "variants": [
+            {
+              "name": "SingleBomb",
+              "type": "()"
+            },
+            {
+              "name": "DoubleBomb",
+              "type": "()"
+            },
+            {
+              "name": "TripleBomb",
+              "type": "()"
+            },
+            {
+              "name": "FivePoints",
+              "type": "()"
+            },
+            {
+              "name": "DoubleMultiplier",
+              "type": "()"
+            },
+            {
+              "name": "RemainingOrbs",
+              "type": "()"
+            },
+            {
+              "name": "BombCounter",
+              "type": "()"
+            },
+            {
+              "name": "Health",
+              "type": "()"
+            },
+            {
+              "name": "CheddahBomb",
+              "type": "()"
+            },
+            {
+              "name": "SevenPoints",
+              "type": "()"
+            },
+            {
+              "name": "MoonRock",
+              "type": "()"
+            },
+            {
+              "name": "HalfMultiplier",
+              "type": "()"
+            },
+            {
+              "name": "EightPoints",
+              "type": "()"
+            },
+            {
+              "name": "NinePoints",
+              "type": "()"
+            },
+            {
+              "name": "NextPoints2x",
+              "type": "()"
+            },
+            {
+              "name": "Multiplier1_5x",
+              "type": "()"
+            },
+            {
+              "name": "BigHealth",
+              "type": "()"
+            },
+            {
+              "name": "BigMoonRock",
+              "type": "()"
+            }
+          ]
+        },
+        {
           "type": "interface",
           "name": "dojo_intro::systems::actions::IActions",
           "items": [
@@ -1422,6 +1500,18 @@
               "type": "function",
               "name": "gift_moonrocks",
               "inputs": [],
+              "outputs": [],
+              "state_mutability": "external"
+            },
+            {
+              "type": "function",
+              "name": "purchase_orb",
+              "inputs": [
+                {
+                  "name": "orb_type",
+                  "type": "dojo_intro::models::OrbType"
+                }
+              ],
               "outputs": [],
               "state_mutability": "external"
             }
@@ -1551,6 +1641,7 @@
         "advance_to_next_level",
         "cash_out",
         "gift_moonrocks",
+        "purchase_orb",
         "upgrade"
       ]
     }
@@ -1592,6 +1683,18 @@
       "class_hash": "0x5912ecab34a83be4980b57a37dbd48f6aac7fa48f0bcdbb76c29e5106055320",
       "tag": "di-OrbBagSlot",
       "selector": "0x57359e4256487e0e8d2102e529bdbe0eafd16c659183907b5b4228d62dc7954"
+    },
+    {
+      "members": [],
+      "class_hash": "0x70da0501a8a0eec66ece4602f405d7634cdc32d2ee87c11c95ba03398884ac9",
+      "tag": "di-PurchaseHistory",
+      "selector": "0x20f9f3f53aacc45da8a22b037744e2f99738b75a880c2fabaf210b16a758669"
+    },
+    {
+      "members": [],
+      "class_hash": "0x78c516c0d9db28b46dec1bf01dcff3e39b5a1a2fea49c57645d0f2440edd13d",
+      "tag": "di-ShopInventory",
+      "selector": "0x777b04c25b53364357b39187b0e8859eff7c63affbb0b9432aec7019a7d33fd"
     }
   ],
   "events": [],
