@@ -23,11 +23,6 @@ export const controllerOptions = {
         description: "Actions contract to control the player movement",
         methods: [
           {
-            name: "Spawn",
-            entrypoint: "spawn",
-            description: "Spawn the player in the game (legacy)",
-          },
-          {
             name: "Spawn Game",
             entrypoint: "spawn_game",
             description:
@@ -57,14 +52,10 @@ export const controllerOptions = {
             description: "Receive 500 Moon Rocks for new players",
           },
           {
-            name: "Move",
-            entrypoint: "move",
-            description: "Move the player in the game",
-          },
-          {
-            name: "Move Random",
-            entrypoint: "move_random",
-            description: "Move the player randomly",
+            name: "Purchase Orb",
+            entrypoint: "purchase_orb",
+            description:
+              "Buy an orb from the shop using Cheddah currency (available after level completion)",
           },
         ],
       },

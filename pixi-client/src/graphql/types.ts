@@ -50,6 +50,23 @@ export interface DrawnOrbModel {
   orb_type: string;
 }
 
+export interface ShopInventoryModel {
+  player: string;
+  game_id: number;
+  level: number;
+  slot_index: number;
+  orb_type: string;
+  base_price: number;
+  rarity: string;
+}
+
+export interface PurchaseHistoryModel {
+  player: string;
+  game_id: number;
+  orb_type: string;
+  purchase_count: number;
+}
+
 // GraphQL Entity Types (with __typename and id)
 export interface GameEntity extends GameModel {
   __typename: "GameModel";
@@ -81,6 +98,16 @@ export interface DrawnOrbEntity extends DrawnOrbModel {
   id: string;
 }
 
+export interface ShopInventoryEntity extends ShopInventoryModel {
+  __typename: "ShopInventoryModel";
+  id: string;
+}
+
+export interface PurchaseHistoryEntity extends PurchaseHistoryModel {
+  __typename: "PurchaseHistoryModel";
+  id: string;
+}
+
 // Combined data result types
 export interface MoonBagData {
   games: GameModel[];
@@ -89,6 +116,8 @@ export interface MoonBagData {
   gameCounter?: GameCounterModel;
   orbBagSlots?: OrbBagSlotModel[];
   drawnOrbs?: DrawnOrbModel[];
+  shopInventory?: ShopInventoryModel[];
+  purchaseHistory?: PurchaseHistoryModel[];
 }
 
 export interface GetMoonBagDataResult {
@@ -109,6 +138,12 @@ export interface GetMoonBagDataResult {
   };
   diDrawnOrbModels?: {
     edges: Array<{ node: DrawnOrbEntity }>;
+  };
+  diShopInventoryModels?: {
+    edges: Array<{ node: ShopInventoryEntity }>;
+  };
+  diPurchaseHistoryModels?: {
+    edges: Array<{ node: PurchaseHistoryEntity }>;
   };
 }
 
@@ -146,5 +181,17 @@ export interface GetOrbBagSlotModelsResult {
 export interface GetDrawnOrbModelsResult {
   diDrawnOrbModels?: {
     edges: Array<{ node: DrawnOrbEntity }>;
+  };
+}
+
+export interface GetShopInventoryModelsResult {
+  diShopInventoryModels?: {
+    edges: Array<{ node: ShopInventoryEntity }>;
+  };
+}
+
+export interface GetPurchaseHistoryModelsResult {
+  diPurchaseHistoryModels?: {
+    edges: Array<{ node: PurchaseHistoryEntity }>;
   };
 }

@@ -96,6 +96,41 @@ export const GET_DRAWN_ORB_MODELS = gql`
   }
 `;
 
+// Query for shop inventory data
+export const GET_SHOP_INVENTORY_MODELS = gql`
+  query GetShopInventoryModels($player: String, $game_id: Int, $level: Int) {
+    diShopInventoryModels(where: { player: $player, game_id: $game_id, level: $level }) {
+      edges {
+        node {
+          player
+          game_id
+          level
+          slot_index
+          orb_type
+          base_price
+          rarity
+        }
+      }
+    }
+  }
+`;
+
+// Query for purchase history data
+export const GET_PURCHASE_HISTORY_MODELS = gql`
+  query GetPurchaseHistoryModels($player: String, $game_id: Int) {
+    diPurchaseHistoryModels(where: { player: $player, game_id: $game_id }) {
+      edges {
+        node {
+          player
+          game_id
+          orb_type
+          purchase_count
+        }
+      }
+    }
+  }
+`;
+
 // Combined query for fetching all Moon Bag data in one request
 export const GET_ALL_MOON_BAG_DATA = gql`
   query GetAllMoonBagData($player: String) {

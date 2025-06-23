@@ -6,6 +6,8 @@ import {
   GET_GAME_COUNTER_MODELS,
   GET_ORB_BAG_SLOT_MODELS,
   GET_DRAWN_ORB_MODELS,
+  GET_SHOP_INVENTORY_MODELS,
+  GET_PURCHASE_HISTORY_MODELS,
   GET_ALL_MOON_BAG_DATA,
   GET_ALL_MOON_BAG_DATA_GLOBAL,
   SUBSCRIBE_MOON_BAG_PLAYER_UPDATES,
@@ -21,12 +23,16 @@ import type {
   GameCounterModel,
   OrbBagSlotModel,
   DrawnOrbModel,
+  ShopInventoryModel,
+  PurchaseHistoryModel,
   GetMoonBagDataResult,
   GameEntity,
   MoonRocksEntity,
   ActiveGameEntity,
   GameCounterEntity,
   DrawnOrbEntity,
+  ShopInventoryEntity,
+  PurchaseHistoryEntity,
 } from "../types";
 
 export class GameDataService {
@@ -295,6 +301,65 @@ export class GameDataService {
       return drawnOrbs;
     } catch (error) {
       console.error("Error fetching drawn orbs:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get player's shop inventory for a specific level
+   */
+  async getPlayerShopInventory(
+    playerAddress: string,
+    gameId: number,
+    level: number,
+  ): Promise<ShopInventoryModel[]> {
+    try {
+      const result = await apolloClient.query({
+        query: GET_SHOP_INVENTORY_MODELS,
+        variables: { player: playerAddress, game_id: gameId, level: level },
+        fetchPolicy: "cache-first",
+      });
+
+      console.log("🛒 Shop Inventory Data (Raw):", result.data);
+
+      const shopInventory =
+        result.data.diShopInventoryModels?.edges?.map(
+          (edge: { node: ShopInventoryModel }) => edge.node,
+        ) || [];
+      console.log("🛒 Shop Inventory Data (Parsed):", shopInventory);
+
+      return shopInventory;
+    } catch (error) {
+      console.error("Error fetching shop inventory:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get player's purchase history for a specific game
+   */
+  async getPlayerPurchaseHistory(
+    playerAddress: string,
+    gameId: number,
+  ): Promise<PurchaseHistoryModel[]> {
+    try {
+      const result = await apolloClient.query({
+        query: GET_PURCHASE_HISTORY_MODELS,
+        variables: { player: playerAddress, game_id: gameId },
+        fetchPolicy: "cache-first",
+      });
+
+      console.log("💰 Purchase History Data (Raw):", result.data);
+
+      const purchaseHistory =
+        result.data.diPurchaseHistoryModels?.edges?.map(
+          (edge: { node: PurchaseHistoryModel }) => edge.node,
+        ) || [];
+      console.log("💰 Purchase History Data (Parsed):", purchaseHistory);
+
+      return purchaseHistory;
+    } catch (error) {
+      console.error("Error fetching purchase history:", error);
       throw error;
     }
   }
@@ -598,6 +663,10 @@ export class GameDataService {
       data.diOrbBagSlotModels?.edges?.map((edge) => edge.node) || [];
     const drawnOrbs =
       data.diDrawnOrbModels?.edges?.map((edge) => edge.node) || [];
+    const shopInventory =
+      data.diShopInventoryModels?.edges?.map((edge) => edge.node) || [];
+    const purchaseHistory =
+      data.diPurchaseHistoryModels?.edges?.map((edge) => edge.node) || [];
 
     return {
       games,
@@ -606,6 +675,8 @@ export class GameDataService {
       gameCounter,
       orbBagSlots,
       drawnOrbs,
+      shopInventory,
+      purchaseHistory,
     };
   }
 
