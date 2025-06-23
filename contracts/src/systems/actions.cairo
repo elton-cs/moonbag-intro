@@ -674,9 +674,10 @@ pub mod actions {
             // Get the active game data
             let mut game: Game = world.read_model((player, active_game.game_id));
             assert(
+                game.game_state == GameState::Active ||
                 game.game_state == GameState::LevelComplete || 
                 game.game_state == GameState::GameWon, 
-                'Can only cash out on win'
+                'Cannot cash out in this state'
             );
 
             // Convert points to Moon Rocks (1:1 ratio per PRD)

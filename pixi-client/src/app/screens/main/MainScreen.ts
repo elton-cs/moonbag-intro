@@ -1,7 +1,7 @@
 import { animate } from "motion";
 import type { AnimationPlaybackControls } from "motion/react";
 import type { Ticker } from "pixi.js";
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, Sprite } from "pixi.js";
 
 import { engine } from "../../getEngine";
 import { CustomButton } from "../../ui/CustomButton";
@@ -61,7 +61,6 @@ export class MainScreen extends Container {
   public mainContainer!: Container;
 
   // Connection UI
-  private connectButton!: CustomButton;
   private usernameLabel!: Label;
   private titleLabel!: Label;
 
@@ -99,6 +98,7 @@ export class MainScreen extends Container {
 
   // Background
   private background!: Graphics;
+  private backgroundImage!: Sprite;
 
   private paused = false;
   private walletUnsubscribe?: () => void;
@@ -125,11 +125,21 @@ export class MainScreen extends Container {
   }
 
   private createBackground(): void {
-    // Create cosmic space background
+    // Create solid background first
     this.background = new Graphics();
     this.background.rect(0, 0, 1920, 1080); // Large size, will be resized
     this.background.fill(0x0a0a1a); // Deep space color
     this.addChild(this.background);
+
+    // Try to load background image if available
+    try {
+      // This will work if you place background.png in raw-assets/preload/
+      this.backgroundImage = Sprite.from("preload/background.png");
+      this.backgroundImage.anchor.set(0.5);
+      this.addChild(this.backgroundImage);
+    } catch (error) {
+      console.log("Background image not found, using solid color background");
+    }
   }
 
   private createContainers(): void {
@@ -157,7 +167,7 @@ export class MainScreen extends Container {
 
   private createUI(): void {
     this.createTitle();
-    this.createConnectionSection();
+    this.createUserInfo();
     this.createResourceBar();
     this.createGameStatusArea();
     this.createOrbInfoRow();
@@ -182,20 +192,7 @@ export class MainScreen extends Container {
     this.mainContainer.addChild(this.titleLabel);
   }
 
-  private createConnectionSection(): void {
-    // Connect wallet button
-    this.connectButton = new CustomButton({
-      text: "Connect Wallet",
-      width: 200,
-      height: 50,
-      backgroundColor: 0x2a2a3a,
-      borderColor: 0x8a4fff,
-      textColor: 0xffffff,
-    });
-    this.connectButton.pivot.set(100, 25); // Center the button
-    this.connectButton.onPress.on(() => this.handleConnectWallet());
-    this.mainContainer.addChild(this.connectButton);
-
+  private createUserInfo(): void {
     // Username display label
     this.usernameLabel = new Label({
       text: "",
@@ -598,6 +595,17 @@ export class MainScreen extends Container {
     this.background.rect(0, 0, width, height);
     this.background.fill(0x0a0a1a);
 
+    // Scale and center background image if it exists
+    if (this.backgroundImage) {
+      this.backgroundImage.position.set(centerX, centerY);
+      
+      // Scale to cover the screen while maintaining aspect ratio
+      const scaleX = width / this.backgroundImage.texture.width;
+      const scaleY = height / this.backgroundImage.texture.height;
+      const scale = Math.max(scaleX, scaleY);
+      this.backgroundImage.scale.set(scale);
+    }
+
     // Center main container
     this.mainContainer.x = centerX;
     this.mainContainer.y = centerY;
@@ -605,7 +613,6 @@ export class MainScreen extends Container {
     // Calculate total height needed for all elements
     const totalHeight =
       60 + // title
-      40 + // connection button
       30 + // username
       layout.RESOURCE_BAR.HEIGHT +
       layout.PANEL_SPACING +
@@ -626,11 +633,6 @@ export class MainScreen extends Container {
     this.titleLabel.x = 0;
     this.titleLabel.y = currentY;
     currentY += 60;
-
-    // Connection button
-    this.connectButton.x = 0;
-    this.connectButton.y = currentY;
-    currentY += 40;
 
     // Username label
     this.usernameLabel.x = 0;
@@ -678,7 +680,6 @@ export class MainScreen extends Container {
     // Animate all UI elements together
     const allElements = [
       this.titleLabel,
-      this.connectButton,
       this.resourceBar,
       this.gameStatusArea,
       this.orbInfoRow,
@@ -716,14 +717,6 @@ export class MainScreen extends Container {
     this.gameDataService.clearSubscriptions();
   }
 
-  /** Handle wallet connection button press */
-  private async handleConnectWallet(): Promise<void> {
-    try {
-      await engine().wallet.connect();
-    } catch (error) {
-      console.error("Failed to connect wallet:", error);
-    }
-  }
 
   /** Handle start game button press */
   private async handleStartGame(): Promise<void> {
@@ -1463,8 +1456,6 @@ export class MainScreen extends Container {
   private onWalletStateChange(state: WalletConnectionState): void {
     switch (state.status) {
       case ConnectionStatus.Disconnected:
-        this.connectButton.text = "Connect Wallet";
-        this.connectButton.enabled = true;
         this.usernameLabel.visible = false;
         this.startGameButton.enabled = false;
         this.pullOrbButton.enabled = false;
@@ -1475,8 +1466,6 @@ export class MainScreen extends Container {
         break;
 
       case ConnectionStatus.Connecting:
-        this.connectButton.text = "Connecting...";
-        this.connectButton.enabled = false;
         this.usernameLabel.visible = false;
         this.giftRocksButton.enabled = false;
         this.pullOrbButton.enabled = false;
@@ -1485,8 +1474,6 @@ export class MainScreen extends Container {
         break;
 
       case ConnectionStatus.Connected: {
-        this.connectButton.text = "Connected";
-        this.connectButton.enabled = false;
         this.startGameButton.enabled = true;
         this.giftRocksButton.enabled = true;
         // Game action buttons will be enabled by game state logic
@@ -1502,7 +1489,7 @@ export class MainScreen extends Container {
         console.log("User display name:", displayName);
 
         this.eventLogList.addEvent(
-          "🔗 Wallet connected successfully!",
+          "🔗 Welcome back! Wallet already connected",
           "success",
         );
 
@@ -1515,8 +1502,6 @@ export class MainScreen extends Container {
       }
 
       case ConnectionStatus.Error:
-        this.connectButton.text = "Connection Failed";
-        this.connectButton.enabled = true;
         this.usernameLabel.visible = false;
         this.startGameButton.enabled = false;
         this.pullOrbButton.enabled = false;

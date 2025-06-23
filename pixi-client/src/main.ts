@@ -1,5 +1,5 @@
 import { setEngine } from "./app/getEngine";
-import { MainScreen } from "./app/screens/main/MainScreen";
+import { HomeScreen } from "./app/screens/HomeScreen";
 import { userSettings } from "./app/utils/userSettings";
 import { CreationEngine } from "./engine/engine";
 import { setupGlobalClient } from "./graphql/apollo-client";
@@ -27,6 +27,6 @@ setEngine(engine);
   // Initialize the user settings
   userSettings.init();
 
-  // Show the main screen directly
-  await engine.navigation.showScreen(MainScreen);
+  // Show the home screen first
+  await engine.navigation.showScreen(HomeScreen);
 })();
