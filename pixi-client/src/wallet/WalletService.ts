@@ -353,9 +353,9 @@ export class WalletService {
   }
 
   /**
-   * Quit the current game and cash out points to Moon Rocks
+   * Cash out current game points to Moon Rocks (only available after level complete or game won)
    */
-  public async quitGame(): Promise<{ transaction_hash: string }> {
+  public async cashOut(): Promise<{ transaction_hash: string }> {
     const actionsContract = manifest.contracts.find(
       (contract: { tag: string; address: string }) =>
         contract.tag === "di-actions",
@@ -367,7 +367,7 @@ export class WalletService {
 
     return this.executeTransaction({
       contractAddress: actionsContract.address,
-      entrypoint: "quit_game",
+      entrypoint: "cash_out",
       calldata: [],
     });
   }

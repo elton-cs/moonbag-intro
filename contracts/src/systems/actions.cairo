@@ -4,7 +4,7 @@ pub trait IActions<T> {
     fn spawn_game(ref self: T);
     fn pull_orb(ref self: T);
     fn advance_to_next_level(ref self: T);
-    fn quit_game(ref self: T);
+    fn cash_out(ref self: T);
     fn gift_moonrocks(ref self: T);
 }
 
@@ -513,7 +513,7 @@ pub mod actions {
             world.write_model(@game);
         }
 
-        fn quit_game(ref self: ContractState) {
+        fn cash_out(ref self: ContractState) {
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -525,9 +525,8 @@ pub mod actions {
             let mut game: Game = world.read_model((player, active_game.game_id));
             assert(
                 game.game_state == GameState::LevelComplete || 
-                game.game_state == GameState::GameWon ||
-                game.game_state == GameState::GameLost, 
-                'Cannot quit active game'
+                game.game_state == GameState::GameWon, 
+                'Can only cash out on win'
             );
 
             // Convert points to Moon Rocks (1:1 ratio per PRD)

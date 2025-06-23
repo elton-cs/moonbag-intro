@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x7adc15ae687ea5a2f5f7ad2f3ebab2b2d0970def215e783f438c7170a3ff3c1",
-      "class_hash": "0xb645a48e490256572320312f7b9aed691d6c6376244800fff1209aa7f78ffc",
+      "address": "0x6abae1437aa7bdd46582389f6e802f2f7b23868b5841831285f18329588004d",
+      "class_hash": "0x6d4216190cc2a904af7e3e1fdd9f5fed7bfce766cf78514606446830570a5b8",
       "abi": [
         {
           "type": "impl",
@@ -1413,7 +1413,7 @@
             },
             {
               "type": "function",
-              "name": "quit_game",
+              "name": "cash_out",
               "inputs": [],
               "outputs": [],
               "state_mutability": "external"
@@ -1549,7 +1549,7 @@
         "spawn_game",
         "pull_orb",
         "advance_to_next_level",
-        "quit_game",
+        "cash_out",
         "gift_moonrocks",
         "upgrade"
       ]
@@ -1565,13 +1565,13 @@
     },
     {
       "members": [],
-      "class_hash": "0xddf3a321e9cd5fc3553a7d06e6522374e4cb2ac357b763fcd0979a72b0baa",
+      "class_hash": "0x6e52ed75fcae1480d328d79199308edc6646f8e63394cf42c9a3abd1db2ee82",
       "tag": "di-DrawnOrb",
       "selector": "0x82d1475398413399cdbc12cae66d1de7f2b50a09731ded3ff23dc6805f1a98"
     },
     {
       "members": [],
-      "class_hash": "0x7e9d86ff2182f8f34b0c4944295cf8ea18dfcc24726fa0773102eb1849fcb6a",
+      "class_hash": "0x322352eb214d0721f199a4329dbc951d327722f98e14943da76a76cde92e4a9",
       "tag": "di-Game",
       "selector": "0x2d80900338aad8f8000d3bdec178807b4e9c224d4211d843b6616482acb5aae"
     },
@@ -1589,7 +1589,7 @@
     },
     {
       "members": [],
-      "class_hash": "0x2e3105784649c55f6d09697b9c3b5302033951f284aa900b13740c00274e232",
+      "class_hash": "0x5912ecab34a83be4980b57a37dbd48f6aac7fa48f0bcdbb76c29e5106055320",
       "tag": "di-OrbBagSlot",
       "selector": "0x57359e4256487e0e8d2102e529bdbe0eafd16c659183907b5b4228d62dc7954"
     }

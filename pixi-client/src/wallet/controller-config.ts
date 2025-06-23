@@ -46,10 +46,10 @@ export const controllerOptions = {
               "Progress to the next level after completing current milestone",
           },
           {
-            name: "Quit Game",
-            entrypoint: "quit_game",
+            name: "Cash Out",
+            entrypoint: "cash_out",
             description:
-              "End the current game and convert points to Moon Rocks",
+              "Cash out points to Moon Rocks (only after level complete or game won)",
           },
           {
             name: "Gift Moon Rocks",

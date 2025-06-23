@@ -66,7 +66,7 @@ export class MainScreen extends Container {
   private startGameButton!: CustomButton;
   private pullOrbButton!: CustomButton;
   private advanceLevelButton!: CustomButton;
-  private quitGameButton!: CustomButton;
+  private cashOutButton!: CustomButton;
   private giftRocksButton!: CustomButton;
 
   // Resource labels (updateable)
@@ -433,8 +433,8 @@ export class MainScreen extends Container {
 
     currentX += buttonWidth + spacing;
 
-    // Quit Game button
-    this.quitGameButton = new CustomButton({
+    // Cash Out button
+    this.cashOutButton = new CustomButton({
       text: "💰 CASH OUT",
       width: buttonWidth,
       height: buttonHeight,
@@ -443,10 +443,10 @@ export class MainScreen extends Container {
       textColor: 0xffffff,
       fontSize: 10,
     });
-    this.quitGameButton.position.set(currentX, buttonY - buttonHeight / 2);
-    this.quitGameButton.onPress.on(() => this.handleQuitGame());
-    this.quitGameButton.visible = false; // Initially hidden
-    this.controlPanel.addChild(this.quitGameButton);
+    this.cashOutButton.position.set(currentX, buttonY - buttonHeight / 2);
+    this.cashOutButton.onPress.on(() => this.handleCashOut());
+    this.cashOutButton.visible = false; // Initially hidden
+    this.controlPanel.addChild(this.cashOutButton);
 
     currentX += buttonWidth + spacing;
 
@@ -732,13 +732,13 @@ export class MainScreen extends Container {
   }
 
   /** Handle quit game button press */
-  private async handleQuitGame(): Promise<void> {
+  private async handleCashOut(): Promise<void> {
     try {
       console.log("Quitting game and cashing out...");
-      this.quitGameButton.enabled = false;
-      this.quitGameButton.text = "🔄 CASHING...";
+      this.cashOutButton.enabled = false;
+      this.cashOutButton.text = "🔄 CASHING...";
 
-      await engine().wallet.quitGame();
+      await engine().wallet.cashOut();
       console.log("Game quit successfully!");
 
       // Refresh blockchain data with polling after successful transaction
@@ -749,12 +749,12 @@ export class MainScreen extends Container {
       console.error("Failed to quit game:", error);
 
       // Re-enable button and show error state
-      this.quitGameButton.enabled = true;
-      this.quitGameButton.text = "❌ FAILED";
+      this.cashOutButton.enabled = true;
+      this.cashOutButton.text = "❌ FAILED";
 
       // Reset button text after showing error
       setTimeout(() => {
-        this.quitGameButton.text = "💰 CASH OUT";
+        this.cashOutButton.text = "💰 CASH OUT";
       }, 2000);
     }
   }
@@ -978,7 +978,7 @@ export class MainScreen extends Container {
     // Hide all game action buttons initially
     this.pullOrbButton.visible = false;
     this.advanceLevelButton.visible = false;
-    this.quitGameButton.visible = false;
+    this.cashOutButton.visible = false;
 
     if (!hasActiveGame) {
       // No active game - show start button only
@@ -1001,17 +1001,17 @@ export class MainScreen extends Container {
         this.startGameButton.visible = false;
         this.advanceLevelButton.visible = true;
         this.advanceLevelButton.enabled = true;
-        this.quitGameButton.visible = true;
-        this.quitGameButton.enabled = true;
+        this.cashOutButton.visible = true;
+        this.cashOutButton.enabled = true;
         break;
 
       case "GameWon":
       case "GameLost":
         // Game over - show quit option only
         this.startGameButton.visible = false;
-        this.quitGameButton.visible = true;
-        this.quitGameButton.enabled = true;
-        this.quitGameButton.text =
+        this.cashOutButton.visible = true;
+        this.cashOutButton.enabled = true;
+        this.cashOutButton.text =
           gameState === "GameWon" ? "🏆 CLAIM VICTORY" : "💀 END GAME";
         break;
 
@@ -1064,7 +1064,7 @@ export class MainScreen extends Container {
         this.startGameButton.enabled = false;
         this.pullOrbButton.enabled = false;
         this.advanceLevelButton.enabled = false;
-        this.quitGameButton.enabled = false;
+        this.cashOutButton.enabled = false;
         this.giftRocksButton.enabled = false;
         this.clearMoonBagDataSubscription();
         break;
@@ -1076,7 +1076,7 @@ export class MainScreen extends Container {
         this.giftRocksButton.enabled = false;
         this.pullOrbButton.enabled = false;
         this.advanceLevelButton.enabled = false;
-        this.quitGameButton.enabled = false;
+        this.cashOutButton.enabled = false;
         break;
 
       case ConnectionStatus.Connected: {
@@ -1111,7 +1111,7 @@ export class MainScreen extends Container {
         this.startGameButton.enabled = false;
         this.pullOrbButton.enabled = false;
         this.advanceLevelButton.enabled = false;
-        this.quitGameButton.enabled = false;
+        this.cashOutButton.enabled = false;
         this.giftRocksButton.enabled = false;
         console.error("Wallet connection error:", state.error);
         break;
