@@ -31,8 +31,6 @@ import type {
   ActiveGameEntity,
   GameCounterEntity,
   DrawnOrbEntity,
-  ShopInventoryEntity,
-  PurchaseHistoryEntity,
 } from "../types";
 
 export class GameDataService {
@@ -360,6 +358,97 @@ export class GameDataService {
       return purchaseHistory;
     } catch (error) {
       console.error("Error fetching purchase history:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get complete shop data for a specific game and level
+   * This is a convenience method for the shop screen
+   */
+  async getShopData(
+    playerAddress: string,
+    gameId: number,
+    level: number,
+  ): Promise<{
+    shopInventory: ShopInventoryModel[];
+    purchaseHistory: PurchaseHistoryModel[];
+  }> {
+    try {
+      console.log(
+        `🛒 Fetching shop data for player ${playerAddress}, game ${gameId}, level ${level}`,
+      );
+
+      // Fetch both shop inventory and purchase history in parallel
+      const [shopInventory, purchaseHistory] = await Promise.all([
+        this.getPlayerShopInventory(playerAddress, gameId, level),
+        this.getPlayerPurchaseHistory(playerAddress, gameId),
+      ]);
+
+      console.log("🛒 Complete shop data:", { shopInventory, purchaseHistory });
+
+      return {
+        shopInventory,
+        purchaseHistory,
+      };
+    } catch (error) {
+      console.error("Error fetching complete shop data:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Refresh shop data with fresh network fetch
+   * Useful after a purchase to get updated inventory and history
+   */
+  async refetchShopData(
+    playerAddress: string,
+    gameId: number,
+    level: number,
+  ): Promise<{
+    shopInventory: ShopInventoryModel[];
+    purchaseHistory: PurchaseHistoryModel[];
+  }> {
+    try {
+      console.log(
+        `🔄 Refetching shop data for player ${playerAddress}, game ${gameId}, level ${level}`,
+      );
+
+      // Use network-only fetch policy to get fresh data
+      const [shopResult, historyResult] = await Promise.all([
+        apolloClient.query({
+          query: GET_SHOP_INVENTORY_MODELS,
+          variables: { player: playerAddress, game_id: gameId, level: level },
+          fetchPolicy: "network-only",
+        }),
+        apolloClient.query({
+          query: GET_PURCHASE_HISTORY_MODELS,
+          variables: { player: playerAddress, game_id: gameId },
+          fetchPolicy: "network-only",
+        }),
+      ]);
+
+      const shopInventory =
+        shopResult.data.diShopInventoryModels?.edges?.map(
+          (edge: { node: ShopInventoryModel }) => edge.node,
+        ) || [];
+
+      const purchaseHistory =
+        historyResult.data.diPurchaseHistoryModels?.edges?.map(
+          (edge: { node: PurchaseHistoryModel }) => edge.node,
+        ) || [];
+
+      console.log("🔄 Refetched shop data:", {
+        shopInventory,
+        purchaseHistory,
+      });
+
+      return {
+        shopInventory,
+        purchaseHistory,
+      };
+    } catch (error) {
+      console.error("Error refetching shop data:", error);
       throw error;
     }
   }

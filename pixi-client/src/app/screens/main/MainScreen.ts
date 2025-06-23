@@ -8,6 +8,8 @@ import { CustomButton } from "../../ui/CustomButton";
 import { Label } from "../../ui/Label";
 import { OrbsDrawnList } from "../../ui/OrbsDrawnList";
 import { EventLogList } from "../../ui/EventLogList";
+import { ShopScreen } from "../ShopScreen";
+import type { ShopScreenData } from "../ShopScreen";
 import type { WalletConnectionState } from "../../../wallet";
 import { ConnectionStatus } from "../../../wallet";
 import { GameDataService } from "../../../graphql/services/GameDataService";
@@ -488,15 +490,15 @@ export class MainScreen extends Container {
 
     currentX += buttonWidth + spacing;
 
-    // Advance Level button
+    // Advance Level button (now opens shop first)
     this.advanceLevelButton = new CustomButton({
-      text: "⬆️ ADVANCE",
+      text: "🛒 ENTER SHOP",
       width: buttonWidth,
       height: buttonHeight,
       backgroundColor: 0x2a2a3a,
       borderColor: 0x44ff88, // Green for progression
       textColor: 0xffffff,
-      fontSize: 10,
+      fontSize: 9, // Slightly smaller font for longer text
     });
     this.advanceLevelButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.advanceLevelButton.onPress.on(() => this.handleAdvanceLevel());
@@ -805,37 +807,150 @@ export class MainScreen extends Container {
     }
   }
 
-  /** Handle advance level button press */
+  /** Handle advance level button press - now shows shop first */
   private async handleAdvanceLevel(): Promise<void> {
     try {
-      console.log("Advancing to next level...");
-      this.advanceLevelButton.enabled = false;
-      this.advanceLevelButton.text = "🔄 ADVANCING...";
+      console.log("Opening shop before advancing to next level...");
+      this.eventLogList.addEvent("🛒 Opening cosmic orb shop...", "info");
 
+      await this.showShopScreen();
+    } catch (error) {
+      console.error("Failed to open shop:", error);
+      this.eventLogList.addEvent("❌ Failed to open shop", "error");
+    }
+  }
+
+  /** Show the shop screen with current game data */
+  private async showShopScreen(): Promise<void> {
+    try {
+      const playerAddress = engine().wallet.getState().address;
+      if (!playerAddress) {
+        throw new Error("No player address available");
+      }
+
+      // Get current game data
+      const allData = await this.gameDataService.getMoonBagData(playerAddress);
+      const activeGame =
+        allData.games.find((game) => game.is_active) || allData.games[0];
+
+      if (!activeGame) {
+        throw new Error("No active game found");
+      }
+
+      // Get shop data for current level
+      const shopData = await this.gameDataService.getShopData(
+        playerAddress,
+        activeGame.game_id,
+        activeGame.current_level,
+      );
+
+      // Calculate next level cost (simplified - you may want to import the actual calculation)
+      const nextLevelCost = this.calculateNextLevelCost(
+        activeGame.current_level + 1,
+      );
+
+      // Prepare shop screen data
+      const shopScreenData: ShopScreenData = {
+        currentGame: activeGame,
+        shopInventory: shopData.shopInventory,
+        purchaseHistory: shopData.purchaseHistory,
+        nextLevelCost: nextLevelCost,
+      };
+
+      // Show shop screen as popup using constructor
+      await engine().navigation.presentPopup(ShopScreen);
+
+      // Access the created popup and initialize it
+      const shopScreen = engine().navigation.currentPopup as ShopScreen;
+      if (shopScreen) {
+        shopScreen.setShopData(shopScreenData);
+        shopScreen.setCallbacks({
+          onAdvance: () => this.handleShopAdvanceLevel(),
+          onCashOut: () => this.handleShopCashOut(),
+          onBack: () => this.handleShopBack(),
+        });
+      }
+    } catch (error) {
+      console.error("Failed to show shop screen:", error);
+      this.eventLogList.addEvent("❌ Failed to load shop", "error");
+    }
+  }
+
+  /** Handle advance level from shop screen */
+  private async handleShopAdvanceLevel(): Promise<void> {
+    try {
+      console.log("Advancing to next level from shop...");
       this.eventLogList.addEvent("⬆️ Advancing to next level...", "info");
 
       await engine().wallet.advanceToNextLevel();
       console.log("Advanced to next level successfully!");
 
-      this.eventLogList.addEvent("🎉 Level completed! Moving up!", "success");
+      this.eventLogList.addEvent("🎉 Level advanced successfully!", "success");
+
+      // Dismiss shop popup
+      await engine().navigation.dismissPopup();
 
       // Refresh blockchain data with polling after successful transaction
       await this.refreshMoonBagDataWithPolling();
-
-      // Button visibility will be updated by game state logic
     } catch (error) {
       console.error("Failed to advance level:", error);
-
       this.eventLogList.addEvent("❌ Failed to advance level", "error");
+      throw error; // Let shop screen handle the error
+    }
+  }
 
-      // Re-enable button and show error state
-      this.advanceLevelButton.enabled = true;
-      this.advanceLevelButton.text = "❌ FAILED";
+  /** Handle cash out from shop screen */
+  private async handleShopCashOut(): Promise<void> {
+    try {
+      console.log("Cashing out from shop...");
+      this.eventLogList.addEvent("💰 Cashing out and ending game...", "info");
 
-      // Reset button text after showing error
-      setTimeout(() => {
-        this.advanceLevelButton.text = "⬆️ ADVANCE";
-      }, 2000);
+      await engine().wallet.cashOut();
+      console.log("Cashed out successfully!");
+
+      this.eventLogList.addEvent("✅ Game ended - rewards claimed!", "success");
+
+      // Dismiss shop popup
+      await engine().navigation.dismissPopup();
+
+      // Refresh blockchain data with polling after successful transaction
+      await this.refreshMoonBagDataWithPolling();
+    } catch (error) {
+      console.error("Failed to cash out:", error);
+      this.eventLogList.addEvent("❌ Failed to cash out", "error");
+      throw error; // Let shop screen handle the error
+    }
+  }
+
+  /** Handle back from shop screen (return without advancing) */
+  private async handleShopBack(): Promise<void> {
+    console.log("Returning from shop without advancing...");
+    this.eventLogList.addEvent("↩️ Returned from shop", "info");
+
+    // Simply dismiss the shop popup
+    await engine().navigation.dismissPopup();
+  }
+
+  /** Calculate next level cost - simplified version */
+  private calculateNextLevelCost(level: number): number {
+    // Based on the contract's get_level_cost function
+    switch (level) {
+      case 1:
+        return 5;
+      case 2:
+        return 6;
+      case 3:
+        return 8;
+      case 4:
+        return 10;
+      case 5:
+        return 12;
+      case 6:
+        return 16;
+      case 7:
+        return 20;
+      default:
+        return 0;
     }
   }
 

@@ -373,6 +373,66 @@ export class WalletService {
   }
 
   /**
+   * Purchase an orb from the shop using Cheddah currency
+   */
+  public async purchaseOrb(
+    orbType: string,
+  ): Promise<{ transaction_hash: string }> {
+    const actionsContract = manifest.contracts.find(
+      (contract: { tag: string; address: string }) =>
+        contract.tag === "di-actions",
+    );
+
+    if (!actionsContract) {
+      throw new Error("Actions contract not found in manifest");
+    }
+
+    // Convert orb type string to the format expected by the contract
+    const orbTypeValue = this.convertOrbTypeToContractValue(orbType);
+
+    return this.executeTransaction({
+      contractAddress: actionsContract.address,
+      entrypoint: "purchase_orb",
+      calldata: [orbTypeValue.toString()],
+    });
+  }
+
+  /**
+   * Convert orb type string to contract enum value
+   * This maps the orb type names to their corresponding enum values in the Cairo contract
+   */
+  private convertOrbTypeToContractValue(orbType: string): number {
+    // Based on the OrbType enum in the Cairo contract
+    const orbTypeMap: Record<string, number> = {
+      SingleBomb: 0,
+      DoubleBomb: 1,
+      TripleBomb: 2,
+      CheddahBomb: 3,
+      FivePoints: 4,
+      SevenPoints: 5,
+      EightPoints: 6,
+      NinePoints: 7,
+      RemainingOrbs: 8,
+      BombCounter: 9,
+      DoubleMultiplier: 10,
+      HalfMultiplier: 11,
+      Multiplier1_5x: 12,
+      NextPoints2x: 13,
+      Health: 14,
+      BigHealth: 15,
+      MoonRock: 16,
+      BigMoonRock: 17,
+    };
+
+    const value = orbTypeMap[orbType];
+    if (value === undefined) {
+      throw new Error(`Unknown orb type: ${orbType}`);
+    }
+
+    return value;
+  }
+
+  /**
    * Update internal state and notify subscribers
    */
   private updateState(newState: Partial<WalletConnectionState>): void {

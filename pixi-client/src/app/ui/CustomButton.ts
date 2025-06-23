@@ -251,4 +251,13 @@ export class CustomButton extends Container {
     this.updateTextSize();
     this.centerText();
   }
+
+  get borderColor(): number {
+    return this.options.borderColor;
+  }
+
+  set borderColor(value: number) {
+    this.options.borderColor = value;
+    this.drawBackground();
+  }
 }

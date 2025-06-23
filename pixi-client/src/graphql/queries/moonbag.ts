@@ -99,7 +99,9 @@ export const GET_DRAWN_ORB_MODELS = gql`
 // Query for shop inventory data
 export const GET_SHOP_INVENTORY_MODELS = gql`
   query GetShopInventoryModels($player: String, $game_id: Int, $level: Int) {
-    diShopInventoryModels(where: { player: $player, game_id: $game_id, level: $level }) {
+    diShopInventoryModels(
+      where: { player: $player, game_id: $game_id, level: $level }
+    ) {
       edges {
         node {
           player
@@ -196,6 +198,29 @@ export const GET_ALL_MOON_BAG_DATA = gql`
           game_id
           draw_index
           orb_type
+        }
+      }
+    }
+    diShopInventoryModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          level
+          slot_index
+          orb_type
+          base_price
+          rarity
+        }
+      }
+    }
+    diPurchaseHistoryModels(where: { player: $player }) {
+      edges {
+        node {
+          player
+          game_id
+          orb_type
+          purchase_count
         }
       }
     }
