@@ -25,6 +25,11 @@ export class MainScreen extends Container {
     PADDING: 15,
     MARGIN: 25,
     PANEL_SPACING: 15, // Reduced spacing between rows
+    MOON_ROCKS_ROW: {
+      WIDTH: 300,
+      HEIGHT: 50,
+      BORDER_RADIUS: 8,
+    },
     RESOURCE_BAR: {
       WIDTH: 500,
       HEIGHT: 50,
@@ -65,6 +70,7 @@ export class MainScreen extends Container {
   private titleLabel!: Label;
 
   // Game UI
+  private moonRocksRow!: Container;
   private resourceBar!: Container;
   private gameStatusArea!: Container;
   private centralOrbDisplay!: Container;
@@ -80,6 +86,7 @@ export class MainScreen extends Container {
   // Resource labels (updateable)
   private healthLabel!: Label;
   private moonRocksLabel!: Label;
+  private moonRocksDisplayLabel!: Label;
   private cheddahLabel!: Label;
   private pointsLabel!: Label;
   private multiplierLabel!: Label;
@@ -157,6 +164,7 @@ export class MainScreen extends Container {
     this.addChild(this.mainContainer);
 
     // UI sub-containers - all visible simultaneously in rows
+    this.moonRocksRow = new Container();
     this.resourceBar = new Container();
     this.gameStatusArea = new Container();
     this.centralOrbDisplay = new Container();
@@ -166,6 +174,7 @@ export class MainScreen extends Container {
     this.settingsContainer = new Container();
     this.confettiContainer = new Container();
 
+    this.mainContainer.addChild(this.moonRocksRow);
     this.mainContainer.addChild(this.resourceBar);
     this.mainContainer.addChild(this.gameStatusArea);
     this.mainContainer.addChild(this.centralOrbDisplay);
@@ -181,6 +190,7 @@ export class MainScreen extends Container {
   private createUI(): void {
     this.createTitle();
     this.createUserInfo();
+    this.createMoonRocksRow();
     this.createResourceBar();
     this.createGameStatusArea();
     this.createCentralOrbDisplay();
@@ -220,6 +230,35 @@ export class MainScreen extends Container {
     this.mainContainer.addChild(this.usernameLabel);
   }
 
+  private createMoonRocksRow(): void {
+    const layout = MainScreen.LAYOUT;
+
+    // Moon Rocks display row - centered and prominent
+    const moonBackground = new Graphics();
+    moonBackground.roundRect(
+      0,
+      0,
+      layout.MOON_ROCKS_ROW.WIDTH,
+      layout.MOON_ROCKS_ROW.HEIGHT,
+      layout.MOON_ROCKS_ROW.BORDER_RADIUS,
+    );
+    moonBackground.fill(0x1a1a2a);
+    moonBackground.stroke({ color: 0xffdd44, width: 2 }); // Gold border for Moon Rocks
+    this.moonRocksRow.addChild(moonBackground);
+
+    // Large Moon Rocks label
+    this.moonRocksDisplayLabel = new Label({
+      text: "🌙 0",
+      style: { fill: 0xffdd44, fontSize: 20, fontWeight: "bold", align: "center" },
+    });
+    this.moonRocksDisplayLabel.anchor.set(0.5);
+    this.moonRocksDisplayLabel.position.set(
+      layout.MOON_ROCKS_ROW.WIDTH / 2,
+      layout.MOON_ROCKS_ROW.HEIGHT / 2,
+    );
+    this.moonRocksRow.addChild(this.moonRocksDisplayLabel);
+  }
+
   private createResourceBar(): void {
     const layout = MainScreen.LAYOUT;
 
@@ -236,8 +275,8 @@ export class MainScreen extends Container {
     barBackground.stroke({ color: 0x8a4fff, width: 2 });
     this.resourceBar.addChild(barBackground);
 
-    // Create updateable resource labels - now 6 items
-    const spacing = layout.RESOURCE_BAR.WIDTH / 6;
+    // Create updateable resource labels - now 5 items (removed Moon Rocks)
+    const spacing = layout.RESOURCE_BAR.WIDTH / 5;
 
     // Health label
     this.healthLabel = new Label({
@@ -251,18 +290,6 @@ export class MainScreen extends Container {
     );
     this.resourceBar.addChild(this.healthLabel);
 
-    // Moon Rocks label
-    this.moonRocksLabel = new Label({
-      text: "🌙 0",
-      style: { fill: 0xffdd44, fontSize: 12, fontWeight: "bold" },
-    });
-    this.moonRocksLabel.anchor.set(0.5);
-    this.moonRocksLabel.position.set(
-      spacing * 1.5,
-      layout.RESOURCE_BAR.HEIGHT / 2,
-    );
-    this.resourceBar.addChild(this.moonRocksLabel);
-
     // Cheddah label
     this.cheddahLabel = new Label({
       text: "💰 0",
@@ -270,7 +297,7 @@ export class MainScreen extends Container {
     });
     this.cheddahLabel.anchor.set(0.5);
     this.cheddahLabel.position.set(
-      spacing * 2.5,
+      spacing * 1.5,
       layout.RESOURCE_BAR.HEIGHT / 2,
     );
     this.resourceBar.addChild(this.cheddahLabel);
@@ -282,7 +309,7 @@ export class MainScreen extends Container {
     });
     this.pointsLabel.anchor.set(0.5);
     this.pointsLabel.position.set(
-      spacing * 3.5,
+      spacing * 2.5,
       layout.RESOURCE_BAR.HEIGHT / 2,
     );
     this.resourceBar.addChild(this.pointsLabel);
@@ -294,7 +321,7 @@ export class MainScreen extends Container {
     });
     this.multiplierLabel.anchor.set(0.5);
     this.multiplierLabel.position.set(
-      spacing * 4.5,
+      spacing * 3.5,
       layout.RESOURCE_BAR.HEIGHT / 2,
     );
     this.resourceBar.addChild(this.multiplierLabel);
@@ -306,7 +333,7 @@ export class MainScreen extends Container {
     });
     this.tempMultiplierLabel.anchor.set(0.5);
     this.tempMultiplierLabel.position.set(
-      spacing * 5.5,
+      spacing * 4.5,
       layout.RESOURCE_BAR.HEIGHT / 2,
     );
     this.tempMultiplierLabel.visible = false; // Hidden by default
@@ -617,6 +644,8 @@ export class MainScreen extends Container {
     const totalHeight =
       60 + // title
       30 + // username
+      layout.MOON_ROCKS_ROW.HEIGHT +
+      layout.PANEL_SPACING +
       layout.RESOURCE_BAR.HEIGHT +
       layout.PANEL_SPACING +
       layout.GAME_STATUS.HEIGHT +
@@ -641,6 +670,11 @@ export class MainScreen extends Container {
     this.usernameLabel.x = 0;
     this.usernameLabel.y = currentY;
     currentY += 30;
+
+    // Moon Rocks row
+    this.moonRocksRow.x = -layout.MOON_ROCKS_ROW.WIDTH / 2;
+    this.moonRocksRow.y = currentY;
+    currentY += layout.MOON_ROCKS_ROW.HEIGHT + layout.PANEL_SPACING;
 
     // Resource bar
     this.resourceBar.x = -layout.RESOURCE_BAR.WIDTH / 2;
@@ -683,6 +717,7 @@ export class MainScreen extends Container {
     // Animate all UI elements together
     const allElements = [
       this.titleLabel,
+      this.moonRocksRow,
       this.resourceBar,
       this.gameStatusArea,
       this.centralOrbDisplay,
@@ -1149,9 +1184,9 @@ export class MainScreen extends Container {
       this.lastMoonRocks = data.moonRocks.amount;
     }
 
-    // Update resource bar
+    // Update Moon Rocks display
     if (data.moonRocks) {
-      this.moonRocksLabel.text = `🌙 ${data.moonRocks.amount}`;
+      this.moonRocksDisplayLabel.text = `🌙 ${data.moonRocks.amount}`;
     }
 
     // Find active game
@@ -1275,6 +1310,7 @@ export class MainScreen extends Container {
       this.multiplierLabel.text = "⚡ --";
       this.tempMultiplierLabel.visible = false;
       this.levelLabel.text = "No Game";
+      this.moonRocksDisplayLabel.text = "🌙 --";
       this.updateControlsForGameState("", false);
     }
 

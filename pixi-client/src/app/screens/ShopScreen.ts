@@ -1,6 +1,6 @@
 import { animate } from "motion";
 import type { AnimationPlaybackControls } from "motion/react";
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, Sprite } from "pixi.js";
 
 import { engine } from "../getEngine";
 import { CustomButton } from "../ui/CustomButton";
@@ -36,6 +36,7 @@ export class ShopScreen extends Container {
 
   // UI Components
   private background!: Graphics;
+  private backgroundImage!: Sprite;
   private mainContainer!: Container;
   private shopHeader!: ShopHeader;
   private shopGrid!: ShopGrid;
@@ -63,11 +64,21 @@ export class ShopScreen extends Container {
   }
 
   private createBackground(): void {
-    // Create cosmic background
+    // Create solid background first
     this.background = new Graphics();
     this.background.rect(0, 0, 1920, 1080);
     this.background.fill(0x0a0a1a);
     this.addChild(this.background);
+
+    // Try to load background image if available
+    try {
+      // This will work if you place background.png in raw-assets/preload/
+      this.backgroundImage = Sprite.from("preload/background.png");
+      this.backgroundImage.anchor.set(0.5);
+      this.addChild(this.backgroundImage);
+    } catch (error) {
+      console.log("Background image not found, using solid color background");
+    }
   }
 
   private createContainers(): void {
@@ -512,6 +523,17 @@ export class ShopScreen extends Container {
     this.background.clear();
     this.background.rect(0, 0, width, height);
     this.background.fill(0x0a0a1a);
+
+    // Scale and center background image if it exists
+    if (this.backgroundImage) {
+      this.backgroundImage.position.set(centerX, centerY);
+      
+      // Scale to cover the screen while maintaining aspect ratio
+      const scaleX = width / this.backgroundImage.texture.width;
+      const scaleY = height / this.backgroundImage.texture.height;
+      const scale = Math.max(scaleX, scaleY);
+      this.backgroundImage.scale.set(scale);
+    }
 
     // Center main container
     this.mainContainer.x = centerX;
