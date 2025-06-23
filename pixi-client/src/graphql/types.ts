@@ -15,6 +15,9 @@ export interface GameModel {
   current_level: number;
   is_active: boolean;
   game_state: string;
+  temp_multiplier_active: boolean;
+  temp_multiplier_value: number;
+  bombs_drawn_count: number;
 }
 
 export interface MoonRocksModel {

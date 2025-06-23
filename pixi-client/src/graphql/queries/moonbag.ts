@@ -15,6 +15,9 @@ export const GET_GAME_MODELS = gql`
           current_level
           is_active
           game_state
+          temp_multiplier_active
+          temp_multiplier_value
+          bombs_drawn_count
         }
       }
     }
@@ -110,6 +113,9 @@ export const GET_ALL_MOON_BAG_DATA = gql`
           game_state
           orb_bag_size
           orbs_drawn_count
+          temp_multiplier_active
+          temp_multiplier_value
+          bombs_drawn_count
         }
       }
     }
@@ -254,6 +260,9 @@ export const SUBSCRIBE_MOON_BAG_PLAYER_UPDATES = gql`
           game_state
           orb_bag_size
           orbs_drawn_count
+          temp_multiplier_active
+          temp_multiplier_value
+          bombs_drawn_count
         }
       }
     }
@@ -327,6 +336,9 @@ export const SUBSCRIBE_GAME_UPDATES = gql`
           game_state
           orb_bag_size
           orbs_drawn_count
+          temp_multiplier_active
+          temp_multiplier_value
+          bombs_drawn_count
         }
       }
     }

@@ -74,6 +74,8 @@ export class MainScreen extends Container {
   private moonRocksLabel!: Label;
   private cheddahLabel!: Label;
   private pointsLabel!: Label;
+  private multiplierLabel!: Label;
+  private tempMultiplierLabel!: Label;
 
   // Game state labels
   private gameStateLabel!: Label;
@@ -202,13 +204,13 @@ export class MainScreen extends Container {
     barBackground.stroke({ color: 0x8a4fff, width: 2 });
     this.resourceBar.addChild(barBackground);
 
-    // Create updateable resource labels
-    const spacing = layout.RESOURCE_BAR.WIDTH / 4;
+    // Create updateable resource labels - now 6 items
+    const spacing = layout.RESOURCE_BAR.WIDTH / 6;
 
     // Health label
     this.healthLabel = new Label({
       text: "❤️ 5",
-      style: { fill: 0xff4a6a, fontSize: 14, fontWeight: "bold" },
+      style: { fill: 0xff4a6a, fontSize: 12, fontWeight: "bold" },
     });
     this.healthLabel.anchor.set(0.5);
     this.healthLabel.position.set(
@@ -220,7 +222,7 @@ export class MainScreen extends Container {
     // Moon Rocks label
     this.moonRocksLabel = new Label({
       text: "🌙 0",
-      style: { fill: 0xffdd44, fontSize: 14, fontWeight: "bold" },
+      style: { fill: 0xffdd44, fontSize: 12, fontWeight: "bold" },
     });
     this.moonRocksLabel.anchor.set(0.5);
     this.moonRocksLabel.position.set(
@@ -232,7 +234,7 @@ export class MainScreen extends Container {
     // Cheddah label
     this.cheddahLabel = new Label({
       text: "💰 0",
-      style: { fill: 0x44ff88, fontSize: 14, fontWeight: "bold" },
+      style: { fill: 0x44ff88, fontSize: 12, fontWeight: "bold" },
     });
     this.cheddahLabel.anchor.set(0.5);
     this.cheddahLabel.position.set(
@@ -244,7 +246,7 @@ export class MainScreen extends Container {
     // Points label
     this.pointsLabel = new Label({
       text: "⭐ 0",
-      style: { fill: 0x8a4fff, fontSize: 14, fontWeight: "bold" },
+      style: { fill: 0x8a4fff, fontSize: 12, fontWeight: "bold" },
     });
     this.pointsLabel.anchor.set(0.5);
     this.pointsLabel.position.set(
@@ -252,6 +254,31 @@ export class MainScreen extends Container {
       layout.RESOURCE_BAR.HEIGHT / 2,
     );
     this.resourceBar.addChild(this.pointsLabel);
+
+    // Base Multiplier label
+    this.multiplierLabel = new Label({
+      text: "⚡ 1x",
+      style: { fill: 0xff9933, fontSize: 12, fontWeight: "bold" },
+    });
+    this.multiplierLabel.anchor.set(0.5);
+    this.multiplierLabel.position.set(
+      spacing * 4.5,
+      layout.RESOURCE_BAR.HEIGHT / 2,
+    );
+    this.resourceBar.addChild(this.multiplierLabel);
+
+    // Temporary Multiplier label (initially hidden)
+    this.tempMultiplierLabel = new Label({
+      text: "🔥 +2x NEXT",
+      style: { fill: 0xff4444, fontSize: 12, fontWeight: "bold" },
+    });
+    this.tempMultiplierLabel.anchor.set(0.5);
+    this.tempMultiplierLabel.position.set(
+      spacing * 5.5,
+      layout.RESOURCE_BAR.HEIGHT / 2,
+    );
+    this.tempMultiplierLabel.visible = false; // Hidden by default
+    this.resourceBar.addChild(this.tempMultiplierLabel);
   }
 
   private createGameStatusArea(): void {
@@ -892,6 +919,17 @@ export class MainScreen extends Container {
       this.cheddahLabel.text = `💰 ${activeGame.cheddah}`;
       this.pointsLabel.text = `⭐ ${activeGame.points}`;
 
+      // Update multiplier displays
+      this.multiplierLabel.text = `⚡ ${activeGame.multiplier}x`;
+
+      // Show/hide temporary multiplier based on active state
+      if (activeGame.temp_multiplier_active) {
+        this.tempMultiplierLabel.text = `🔥 +${activeGame.temp_multiplier_value}x NEXT`;
+        this.tempMultiplierLabel.visible = true;
+      } else {
+        this.tempMultiplierLabel.visible = false;
+      }
+
       // Update level display
       this.levelLabel.text = `Level ${activeGame.current_level}`;
 
@@ -923,6 +961,8 @@ export class MainScreen extends Container {
       this.healthLabel.text = "❤️ --";
       this.cheddahLabel.text = "💰 --";
       this.pointsLabel.text = "⭐ --";
+      this.multiplierLabel.text = "⚡ --";
+      this.tempMultiplierLabel.visible = false;
       this.levelLabel.text = "No Game";
       this.gameStateLabel.text = "🎒 Moon Bag - Ready to Play";
       this.updateControlsForGameState("", false);
