@@ -35,11 +35,6 @@ export class MainScreen extends Container {
       HEIGHT: 50,
       BORDER_RADIUS: 8,
     },
-    GAME_STATUS: {
-      WIDTH: 500,
-      HEIGHT: 200, // Reduced height for game status area
-      BORDER_RADIUS: 15,
-    },
     CENTRAL_ORB_DISPLAY: {
       WIDTH: 500,
       HEIGHT: 180, // Large central display for current orb
@@ -72,7 +67,6 @@ export class MainScreen extends Container {
   // Game UI
   private moonRocksRow!: Container;
   private resourceBar!: Container;
-  private gameStatusArea!: Container;
   private centralOrbDisplay!: Container;
   private drawnOrbsRow!: Container;
   private eventLogRow!: Container;
@@ -166,7 +160,6 @@ export class MainScreen extends Container {
     // UI sub-containers - all visible simultaneously in rows
     this.moonRocksRow = new Container();
     this.resourceBar = new Container();
-    this.gameStatusArea = new Container();
     this.centralOrbDisplay = new Container();
     this.drawnOrbsRow = new Container();
     this.eventLogRow = new Container();
@@ -176,7 +169,6 @@ export class MainScreen extends Container {
 
     this.mainContainer.addChild(this.moonRocksRow);
     this.mainContainer.addChild(this.resourceBar);
-    this.mainContainer.addChild(this.gameStatusArea);
     this.mainContainer.addChild(this.centralOrbDisplay);
     this.mainContainer.addChild(this.drawnOrbsRow);
     this.mainContainer.addChild(this.eventLogRow);
@@ -192,7 +184,6 @@ export class MainScreen extends Container {
     this.createUserInfo();
     this.createMoonRocksRow();
     this.createResourceBar();
-    this.createGameStatusArea();
     this.createCentralOrbDisplay();
     this.createDrawnOrbsRow();
     this.createEventLogRow();
@@ -340,23 +331,6 @@ export class MainScreen extends Container {
     this.resourceBar.addChild(this.tempMultiplierLabel);
   }
 
-  private createGameStatusArea(): void {
-    const layout = MainScreen.LAYOUT;
-
-    // Simple level title - no background, just the text
-    this.levelLabel = new Label({
-      text: "Level 1",
-      style: {
-        fill: 0x8a4fff,
-        align: "center",
-        fontSize: 24,
-        fontWeight: "bold",
-      },
-    });
-    this.levelLabel.anchor.set(0.5);
-    this.levelLabel.position.set(layout.GAME_STATUS.WIDTH / 2, layout.GAME_STATUS.HEIGHT / 2);
-    this.gameStatusArea.addChild(this.levelLabel);
-  }
 
   private createCentralOrbDisplay(): void {
     const layout = MainScreen.LAYOUT;
@@ -403,6 +377,20 @@ export class MainScreen extends Container {
     this.currentOrbLabel.anchor.set(0.5);
     this.currentOrbLabel.position.set(centerX, centerY + 50);
     this.centralOrbDisplay.addChild(this.currentOrbLabel);
+
+    // Level label positioned under the orb description
+    this.levelLabel = new Label({
+      text: "Level 1",
+      style: {
+        fill: 0x8a4fff,
+        align: "center",
+        fontSize: 16,
+        fontWeight: "bold",
+      },
+    });
+    this.levelLabel.anchor.set(0.5);
+    this.levelLabel.position.set(centerX, centerY + 80);
+    this.centralOrbDisplay.addChild(this.levelLabel);
   }
 
   private createDrawnOrbsRow(): void {
@@ -648,8 +636,6 @@ export class MainScreen extends Container {
       layout.PANEL_SPACING +
       layout.RESOURCE_BAR.HEIGHT +
       layout.PANEL_SPACING +
-      layout.GAME_STATUS.HEIGHT +
-      layout.PANEL_SPACING +
       layout.CENTRAL_ORB_DISPLAY.HEIGHT +
       layout.PANEL_SPACING +
       layout.DRAWN_ORBS_ROW.HEIGHT +
@@ -680,11 +666,6 @@ export class MainScreen extends Container {
     this.resourceBar.x = -layout.RESOURCE_BAR.WIDTH / 2;
     this.resourceBar.y = currentY;
     currentY += layout.RESOURCE_BAR.HEIGHT + layout.PANEL_SPACING;
-
-    // Game status area
-    this.gameStatusArea.x = -layout.GAME_STATUS.WIDTH / 2;
-    this.gameStatusArea.y = currentY;
-    currentY += layout.GAME_STATUS.HEIGHT + layout.PANEL_SPACING;
 
     // Central orb display
     this.centralOrbDisplay.x = -layout.CENTRAL_ORB_DISPLAY.WIDTH / 2;
@@ -719,7 +700,6 @@ export class MainScreen extends Container {
       this.titleLabel,
       this.moonRocksRow,
       this.resourceBar,
-      this.gameStatusArea,
       this.centralOrbDisplay,
       this.drawnOrbsRow,
       this.eventLogRow,
@@ -1311,6 +1291,7 @@ export class MainScreen extends Container {
       this.tempMultiplierLabel.visible = false;
       this.levelLabel.text = "No Game";
       this.moonRocksDisplayLabel.text = "🌙 --";
+      this.resetCentralOrbDisplay();
       this.updateControlsForGameState("", false);
     }
 
