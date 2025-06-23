@@ -1381,10 +1381,13 @@ export class MainScreen extends Container {
 
     switch (gameState) {
       case "Active":
-        // Game is active - show pull orb button, hide start
+        // Game is active - show pull orb and cash out buttons, hide start
         this.startGameButton.visible = false;
         this.pullOrbButton.visible = true;
         this.pullOrbButton.enabled = true;
+        this.cashOutButton.visible = true;
+        this.cashOutButton.enabled = true;
+        this.cashOutButton.text = "💰 CASH OUT";
         break;
 
       case "LevelComplete":
