@@ -13,7 +13,7 @@ import { ConnectionStatus } from "../../wallet";
 /** The home screen that shows before the main game */
 export class HomeScreen extends Container {
   /** Assets bundles required by this screen */
-  public static assetBundles = ["preload"];
+  public static assetBundles = ["preload", "main"];
 
   // UI Components
   private background!: Graphics;
