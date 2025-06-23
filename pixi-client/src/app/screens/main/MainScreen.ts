@@ -100,6 +100,7 @@ export class MainScreen extends Container {
   private background!: Graphics;
   private backgroundImage!: Sprite;
   private flashOverlay!: Graphics;
+  private confettiContainer!: Container;
 
   private paused = false;
   private walletUnsubscribe?: () => void;
@@ -163,6 +164,7 @@ export class MainScreen extends Container {
     this.eventLogRow = new Container();
     this.controlPanel = new Container();
     this.settingsContainer = new Container();
+    this.confettiContainer = new Container();
 
     this.mainContainer.addChild(this.resourceBar);
     this.mainContainer.addChild(this.gameStatusArea);
@@ -171,6 +173,9 @@ export class MainScreen extends Container {
     this.mainContainer.addChild(this.eventLogRow);
     this.mainContainer.addChild(this.controlPanel);
     this.mainContainer.addChild(this.settingsContainer);
+    
+    // Add confetti container on top of everything for visual effects
+    this.mainContainer.addChild(this.confettiContainer);
   }
 
   private createUI(): void {
@@ -1178,7 +1183,7 @@ export class MainScreen extends Container {
         const change = activeGame.points - this.lastPoints;
         if (change > 0) {
           this.eventLogList.addEvent(`⭐ +${change} Points earned!`, "success");
-          this.flashHealing(); // Green flash for points gained
+          this.createStarConfetti(change); // Star confetti for points gained
         }
       }
       this.lastPoints = activeGame.points;
@@ -1299,6 +1304,7 @@ export class MainScreen extends Container {
             break;
           case "FivePoints":
             effectMessage = " - Points gained!";
+            this.createStarConfetti(5); // Immediate star confetti for 5 points
             break;
           case "SingleBomb":
             effectMessage = " - Bomb exploded!";
@@ -1387,6 +1393,60 @@ export class MainScreen extends Container {
       duration: 0.5, 
       ease: "easeOut" 
     });
+  }
+
+  /** Create star confetti animation for point increases */
+  private createStarConfetti(pointsGained: number): void {
+    const starEmojis = ["⭐", "🌟", "✨", "💫"];
+    
+    // More stars for higher point gains (minimum 6, max 20)
+    const numStars = Math.min(20, Math.max(6, pointsGained * 2 + 4));
+    
+    for (let i = 0; i < numStars; i++) {
+      // Create star label
+      const star = new Label({
+        text: starEmojis[Math.floor(Math.random() * starEmojis.length)],
+        style: {
+          fontSize: 24 + Math.random() * 16, // Random size between 24-40px
+          align: "center",
+        },
+      });
+      
+      star.anchor.set(0.5);
+      
+      // Start from center of screen
+      star.position.set(0, 0);
+      star.alpha = 0;
+      star.scale.set(0);
+      
+      this.confettiContainer.addChild(star);
+      
+      // Random direction and distance
+      const angle = (Math.PI * 2 * i) / numStars + (Math.random() - 0.5) * 0.8;
+      const distance = 200 + Math.random() * 300;
+      const finalX = Math.cos(angle) * distance;
+      const finalY = Math.sin(angle) * distance;
+      
+      // Animate star burst
+      animate(
+        star,
+        {
+          x: finalX,
+          y: finalY,
+          alpha: [0, 1, 0],
+          scale: [0, 1.2, 0.8, 0],
+          rotation: Math.random() * Math.PI * 4, // Multiple rotations
+        },
+        {
+          duration: 1.5 + Math.random() * 0.5, // 1.5-2 seconds
+          ease: "easeOut",
+        }
+      ).then(() => {
+        // Clean up after animation
+        this.confettiContainer.removeChild(star);
+        star.destroy();
+      });
+    }
   }
 
   /** Get emoji for orb type */
