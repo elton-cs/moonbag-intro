@@ -18,7 +18,6 @@ export class HomeScreen extends Container {
   // UI Components
   private background!: Graphics;
   private backgroundImage!: Sprite;
-  private titleLabel!: Label;
   private connectButton!: CustomButton;
   private statusLabel!: Label;
 
@@ -52,19 +51,6 @@ export class HomeScreen extends Container {
   }
 
   private createUI(): void {
-    // Game title
-    this.titleLabel = new Label({
-      text: "🌙 MOON BAG 🌙",
-      style: {
-        fill: 0x8a4fff, // Cosmic purple
-        align: "center",
-        fontSize: 48,
-        fontWeight: "bold",
-      },
-    });
-    this.titleLabel.anchor.set(0.5);
-    this.addChild(this.titleLabel);
-
     // Connect wallet button
     this.connectButton = new CustomButton({
       text: "Connect Wallet",
@@ -79,9 +65,9 @@ export class HomeScreen extends Container {
     this.connectButton.onPress.on(() => this.handleConnectWallet());
     this.addChild(this.connectButton);
 
-    // Status label
+    // Status label (initially hidden)
     this.statusLabel = new Label({
-      text: "Connect your wallet to start playing",
+      text: "",
       style: {
         fill: 0xc0c0d0,
         align: "center",
@@ -89,6 +75,7 @@ export class HomeScreen extends Container {
       },
     });
     this.statusLabel.anchor.set(0.5);
+    this.statusLabel.visible = false;
     this.addChild(this.statusLabel);
   }
 
@@ -141,10 +128,9 @@ export class HomeScreen extends Container {
       this.backgroundImage.scale.set(scale);
     }
 
-    // Position UI elements
-    this.titleLabel.position.set(centerX, centerY - 150);
-    this.connectButton.position.set(centerX, centerY);
-    this.statusLabel.position.set(centerX, centerY + 100);
+    // Position UI elements - button much higher up since logo is in background
+    this.connectButton.position.set(centerX, centerY - 200);
+    this.statusLabel.position.set(centerX, centerY - 120);
   }
 
   /** Show screen with animations */
@@ -153,7 +139,7 @@ export class HomeScreen extends Container {
     engine().audio.bgm.play("main/sounds/bgm-main.mp3", { volume: 0.3 });
 
     // Animate UI elements
-    const elements = [this.titleLabel, this.connectButton, this.statusLabel];
+    const elements = [this.connectButton, this.statusLabel];
     
     let finalPromise!: AnimationPlaybackControls;
 
@@ -194,8 +180,7 @@ export class HomeScreen extends Container {
       case ConnectionStatus.Disconnected:
         this.connectButton.text = "Connect Wallet";
         this.connectButton.enabled = true;
-        this.statusLabel.text = "Connect your wallet to start playing";
-        this.statusLabel.style.fill = 0xc0c0d0;
+        this.statusLabel.visible = false;
         break;
 
       case ConnectionStatus.Connecting:
@@ -203,6 +188,7 @@ export class HomeScreen extends Container {
         this.connectButton.enabled = false;
         this.statusLabel.text = "Connecting to wallet...";
         this.statusLabel.style.fill = 0xffaa00;
+        this.statusLabel.visible = true;
         break;
 
       case ConnectionStatus.Connected:
@@ -210,6 +196,7 @@ export class HomeScreen extends Container {
         this.connectButton.enabled = false;
         this.statusLabel.text = "Wallet connected! Loading game...";
         this.statusLabel.style.fill = 0x44ff88;
+        this.statusLabel.visible = true;
         
         // Navigate to main screen after a brief delay
         setTimeout(async () => {
@@ -222,6 +209,7 @@ export class HomeScreen extends Container {
         this.connectButton.enabled = true;
         this.statusLabel.text = "Failed to connect wallet. Please try again.";
         this.statusLabel.style.fill = 0xff4444;
+        this.statusLabel.visible = true;
         break;
     }
   }
