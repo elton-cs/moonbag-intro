@@ -99,6 +99,7 @@ export class MainScreen extends Container {
   // Background
   private background!: Graphics;
   private backgroundImage!: Sprite;
+  private flashOverlay!: Graphics;
 
   private paused = false;
   private walletUnsubscribe?: () => void;
@@ -140,6 +141,13 @@ export class MainScreen extends Container {
     } catch (error) {
       console.log("Background image not found, using solid color background");
     }
+
+    // Create flash overlay for damage/healing effects
+    this.flashOverlay = new Graphics();
+    this.flashOverlay.rect(0, 0, 1920, 1080);
+    this.flashOverlay.fill(0xff0000); // Red by default
+    this.flashOverlay.alpha = 0; // Initially invisible
+    this.addChild(this.flashOverlay);
   }
 
   private createContainers(): void {
@@ -590,6 +598,11 @@ export class MainScreen extends Container {
       const scale = Math.max(scaleX, scaleY);
       this.backgroundImage.scale.set(scale);
     }
+
+    // Resize flash overlay to cover full screen
+    this.flashOverlay.clear();
+    this.flashOverlay.rect(0, 0, width, height);
+    this.flashOverlay.fill(0xff0000); // Will be changed based on effect type
 
     // Center main container
     this.mainContainer.x = centerX;
@@ -1149,11 +1162,13 @@ export class MainScreen extends Container {
             `❤️ +${change} Health restored!`,
             "success",
           );
+          this.flashHealing(); // Green flash for healing
         } else if (change < 0) {
           this.eventLogList.addEvent(
             `💔 ${Math.abs(change)} Health lost!`,
             "error",
           );
+          this.flashDamage(); // Red flash for damage
         }
       }
       this.lastHealth = activeGame.health;
@@ -1163,6 +1178,7 @@ export class MainScreen extends Container {
         const change = activeGame.points - this.lastPoints;
         if (change > 0) {
           this.eventLogList.addEvent(`⭐ +${change} Points earned!`, "success");
+          this.flashHealing(); // Green flash for points gained
         }
       }
       this.lastPoints = activeGame.points;
@@ -1345,6 +1361,32 @@ export class MainScreen extends Container {
     this.currentOrbEmoji.text = "🎲";
     this.currentOrbLabel.text = "Pull an orb to see result";
     this.currentOrbLabel.style.fill = 0xc0c0d0; // Default silver
+  }
+
+  /** Flash screen red for damage */
+  private flashDamage(): void {
+    this.flashOverlay.clear();
+    this.flashOverlay.rect(0, 0, this.flashOverlay.width || 1920, this.flashOverlay.height || 1080);
+    this.flashOverlay.fill(0xff0000); // Bright red
+    
+    // Quick bright flash then fade out
+    animate(this.flashOverlay, { alpha: [0, 0.6, 0] }, { 
+      duration: 0.4, 
+      ease: "easeOut" 
+    });
+  }
+
+  /** Flash screen green for healing/points */
+  private flashHealing(): void {
+    this.flashOverlay.clear();
+    this.flashOverlay.rect(0, 0, this.flashOverlay.width || 1920, this.flashOverlay.height || 1080);
+    this.flashOverlay.fill(0x00ff00); // Bright green
+    
+    // Quick bright flash then fade out
+    animate(this.flashOverlay, { alpha: [0, 0.5, 0] }, { 
+      duration: 0.5, 
+      ease: "easeOut" 
+    });
   }
 
   /** Get emoji for orb type */
