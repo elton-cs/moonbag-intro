@@ -1,14 +1,15 @@
-# Dojo intro
+# Dojo intro x Moon Bag Vibes
 
-This repository contains a (very) simple [Dojo](https://book.dojoengine.org/) game.
+# How to Play
 
-The goal is to showcase how Dojo works and ease the developement for on-chain applications and games.
+- Connect Wallet
+- Gift Moon Rocks to get the (fake) currency to play the game
+- Click Start Game
+- Pull Orbs!
 
-The game is built with 3 components:
-
-- `contracts`: The Dojo contracts deployed on Starknet.
-- `client`: The client application that interacts with the contracts (and read data using Torii).
-- `pkg`: Contains the wasm and js bindings to use Torii client (`v1.5.0`). This is usually abstracted by [`dojo.js`](https://github.com/dojoengine/dojo.js), but here we're doing it manually for educational purposes.
+Extras:
+- Visit the Shop to buy more Orbs if you survive past level 1
+- Gamble to get to the end of a level or Quit Early to cash out the Points back into Moon Rocks
 
 ## Setup
 
