@@ -194,13 +194,20 @@ export class ShopScreen extends Container {
 
       console.log(`Purchasing orb from slot: ${slotIndex}`);
 
+      // Get current cheddah for comparison
+      const currentCheddah = this.shopData.currentGame.cheddah;
+      console.log(`Current cheddah before purchase: ${currentCheddah}`);
+
       // Call wallet service to purchase orb
-      await engine().wallet.purchaseOrb(slotIndex);
+      const result = await engine().wallet.purchaseOrb(slotIndex);
+      console.log(
+        `Transaction submitted with hash: ${result.transaction_hash}`,
+      );
 
-      this.showStatus("✅ Orb purchased successfully!", "success");
+      this.showStatus("✅ Orb purchased! Updating balance...", "success");
 
-      // Refresh shop data after purchase
-      await this.refreshShopData();
+      // Wait a moment for transaction to be processed, then use polling for fresh data
+      await this.pollForUpdatedCheddah(currentCheddah);
     } catch (error) {
       console.error("Failed to purchase orb:", error);
       this.showStatus("❌ Purchase failed", "error");
@@ -290,11 +297,38 @@ export class ShopScreen extends Container {
 
       // Update shop data
       if (allData.shopInventory && allData.purchaseHistory) {
-        this.shopData.shopInventory = allData.shopInventory.filter(
+        const filteredShopInventory = allData.shopInventory.filter(
           (item) =>
             item.game_id === activeGame.game_id &&
             item.level === activeGame.current_level,
         );
+
+        console.log("🛒 DEBUG: All shop inventory:", allData.shopInventory);
+        console.log(
+          "🛒 DEBUG: Filtered shop inventory:",
+          filteredShopInventory,
+        );
+        console.log("🛒 DEBUG: Active game:", activeGame);
+
+        // Sort by slot_index to ensure proper display order
+        filteredShopInventory.sort((a, b) => a.slot_index - b.slot_index);
+
+        // Defensive check: ensure we have exactly 6 slots (0-5)
+        console.log("🛒 DEBUG: Checking for missing slots...");
+        const expectedSlots = [0, 1, 2, 3, 4, 5];
+        const actualSlots = filteredShopInventory.map(
+          (item) => item.slot_index,
+        );
+        const missingSlots = expectedSlots.filter(
+          (slot) => !actualSlots.includes(slot),
+        );
+
+        if (missingSlots.length > 0) {
+          console.warn("🛒 WARNING: Missing shop slots:", missingSlots);
+          console.warn("🛒 WARNING: Expected 6 slots (0-5), got:", actualSlots);
+        }
+
+        this.shopData.shopInventory = filteredShopInventory;
         this.shopData.purchaseHistory = allData.purchaseHistory.filter(
           (history) => history.game_id === activeGame.game_id,
         );
@@ -305,6 +339,126 @@ export class ShopScreen extends Container {
     } catch (error) {
       console.error("Failed to refresh shop data:", error);
     }
+  }
+
+  private async pollForUpdatedCheddah(previousCheddah: number): Promise<void> {
+    const playerAddress = engine().wallet.getState().address;
+    if (!playerAddress) return;
+
+    console.log(`Polling for cheddah update. Previous: ${previousCheddah}`);
+
+    let attempts = 0;
+    const maxAttempts = 15; // 7.5 seconds at 500ms intervals
+    const intervalMs = 500;
+
+    const pollForChanges = async (): Promise<boolean> => {
+      attempts++;
+      console.log(`Polling attempt ${attempts}/${maxAttempts}`);
+
+      try {
+        // Force fresh data fetch
+        const freshData =
+          await this.gameDataService.refetchMoonBagData(playerAddress);
+
+        // Find the active game
+        const activeGame =
+          freshData.games.find((game) => game.is_active) || freshData.games[0];
+        if (!activeGame) {
+          console.log("No active game found during polling");
+          return false;
+        }
+
+        console.log(
+          `Current cheddah: ${activeGame.cheddah}, Previous: ${previousCheddah}`,
+        );
+
+        // Check if cheddah has changed (should be less than before after purchase)
+        if (activeGame.cheddah !== previousCheddah) {
+          console.log(
+            `✅ Cheddah updated! ${previousCheddah} → ${activeGame.cheddah}`,
+          );
+
+          // Update shop data with fresh information
+          if (freshData.shopInventory && freshData.purchaseHistory) {
+            const filteredShopInventory = freshData.shopInventory.filter(
+              (item) =>
+                item.game_id === activeGame.game_id &&
+                item.level === activeGame.current_level,
+            );
+
+            console.log(
+              "🛒 POLLING DEBUG: Fresh shop inventory:",
+              freshData.shopInventory,
+            );
+            console.log(
+              "🛒 POLLING DEBUG: Filtered shop inventory:",
+              filteredShopInventory,
+            );
+
+            // Sort by slot_index to ensure proper display order
+            filteredShopInventory.sort((a, b) => a.slot_index - b.slot_index);
+
+            // Defensive check: ensure we have exactly 6 slots (0-5)
+            const expectedSlots = [0, 1, 2, 3, 4, 5];
+            const actualSlots = filteredShopInventory.map(
+              (item) => item.slot_index,
+            );
+            const missingSlots = expectedSlots.filter(
+              (slot) => !actualSlots.includes(slot),
+            );
+
+            if (missingSlots.length > 0) {
+              console.warn(
+                "🛒 POLLING WARNING: Missing shop slots:",
+                missingSlots,
+              );
+              console.warn(
+                "🛒 POLLING WARNING: Expected 6 slots (0-5), got:",
+                actualSlots,
+              );
+            }
+
+            this.shopData.shopInventory = filteredShopInventory;
+            this.shopData.purchaseHistory = freshData.purchaseHistory.filter(
+              (history) => history.game_id === activeGame.game_id,
+            );
+            this.shopData.currentGame = activeGame;
+
+            this.updateShopDisplay();
+            this.showStatus("💰 Balance updated!", "success");
+          }
+
+          return true; // Success - data changed
+        }
+
+        return false; // No change yet
+      } catch (error) {
+        console.error(`Polling attempt ${attempts} failed:`, error);
+        return false;
+      }
+    };
+
+    // Start polling with retry mechanism
+    const poll = async (): Promise<void> => {
+      const success = await pollForChanges();
+
+      if (success) {
+        console.log("✅ Polling successful - cheddah updated");
+        return;
+      }
+
+      if (attempts < maxAttempts) {
+        setTimeout(poll, intervalMs);
+      } else {
+        console.log("⏱️ Polling timed out - using fallback refresh");
+        // Fallback: just refresh normally
+        await this.refreshShopData();
+        this.showStatus("⚠️ Balance may take a moment to update", "info");
+      }
+    };
+
+    // Start polling after a brief delay
+    setTimeout(poll, 1000); // Wait 1 second before starting to poll
   }
 
   private updateShopDisplay(): void {

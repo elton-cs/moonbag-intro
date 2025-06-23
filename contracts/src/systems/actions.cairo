@@ -260,19 +260,25 @@ pub mod actions {
         };
 
         // Select 1 cosmic orb
-        let random_idx = get_pseudo_random(player, game_id + level.into() + slot_idx.into(), cosmic_orbs.len());
-        let selected_orb = *cosmic_orbs.at(random_idx);
-        
-        let shop_slot = ShopInventory {
-            player,
-            game_id,
-            level,
-            slot_index: slot_idx,
-            orb_type: selected_orb,
-            base_price: get_orb_base_price(selected_orb),
-            rarity: ShopRarity::Cosmic,
+        let mut cosmic_selected: u8 = 0;
+        while cosmic_selected < COSMIC_SLOTS {
+            let random_idx = get_pseudo_random(player, game_id + level.into() + slot_idx.into(), cosmic_orbs.len());
+            let selected_orb = *cosmic_orbs.at(random_idx);
+            
+            let shop_slot = ShopInventory {
+                player,
+                game_id,
+                level,
+                slot_index: slot_idx,
+                orb_type: selected_orb,
+                base_price: get_orb_base_price(selected_orb),
+                rarity: ShopRarity::Cosmic,
+            };
+            world.write_model(@shop_slot);
+            
+            slot_idx = slot_idx.saturating_add(1);
+            cosmic_selected = cosmic_selected.saturating_add(1);
         };
-        world.write_model(@shop_slot);
     }
 
     #[abi(embed_v0)]

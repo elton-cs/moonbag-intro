@@ -47,6 +47,9 @@ export class ShopGrid extends Container {
     const { shopItems, purchaseHistory, playerCheddah, onPurchase } =
       this.options;
 
+    console.log("🛒 GRID DEBUG: Creating orb cards for items:", shopItems);
+    console.log("🛒 GRID DEBUG: Item count:", shopItems.length);
+
     // Clear existing cards
     this.orbCards.forEach((card) => {
       this.removeChild(card);
@@ -55,6 +58,7 @@ export class ShopGrid extends Container {
 
     // Create cards for each shop item
     shopItems.forEach((shopItem, index) => {
+      console.log(`🛒 GRID DEBUG: Processing item ${index}:`, shopItem);
       if (index >= 6) return; // Only show first 6 items (2x3 grid)
 
       // Find purchase history for this orb type

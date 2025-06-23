@@ -838,11 +838,31 @@ export class MainScreen extends Container {
       }
 
       // Get shop data for current level
+      console.log(
+        `🛒 MAIN: Fetching shop data for game ${activeGame.game_id}, level ${activeGame.current_level}`,
+      );
       const shopData = await this.gameDataService.getShopData(
         playerAddress,
         activeGame.game_id,
         activeGame.current_level,
       );
+
+      console.log(`🛒 MAIN: Shop data received:`, shopData);
+      console.log(
+        `🛒 MAIN: Shop inventory count: ${shopData.shopInventory.length}`,
+      );
+      console.log(
+        `🛒 MAIN: Purchase history count: ${shopData.purchaseHistory.length}`,
+      );
+
+      if (shopData.shopInventory.length < 6) {
+        console.warn(
+          `🛒 MAIN WARNING: Only ${shopData.shopInventory.length} shop items found, expected 6`,
+        );
+        console.warn(
+          `🛒 MAIN WARNING: This might be a backend issue with shop generation`,
+        );
+      }
 
       // Calculate next level cost (simplified - you may want to import the actual calculation)
       const nextLevelCost = this.calculateNextLevelCost(
@@ -856,6 +876,8 @@ export class MainScreen extends Container {
         purchaseHistory: shopData.purchaseHistory,
         nextLevelCost: nextLevelCost,
       };
+
+      console.log(`🛒 MAIN: Prepared shop screen data:`, shopScreenData);
 
       // Show shop screen as popup using constructor
       await engine().navigation.presentPopup(ShopScreen);

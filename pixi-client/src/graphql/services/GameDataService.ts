@@ -326,6 +326,39 @@ export class GameDataService {
         ) || [];
       console.log("🛒 Shop Inventory Data (Parsed):", shopInventory);
 
+      // Enhanced debugging - check slot coverage
+      if (shopInventory.length > 0) {
+        const slots = shopInventory.map((item) => item.slot_index).sort();
+        const expectedSlots = [0, 1, 2, 3, 4, 5];
+        const missingSlots = expectedSlots.filter(
+          (slot) => !slots.includes(slot),
+        );
+
+        console.log(
+          `🛒 DEBUG: Found ${shopInventory.length} shop items for level ${level}`,
+        );
+        console.log(`🛒 DEBUG: Slot indices present: [${slots.join(", ")}]`);
+        if (missingSlots.length > 0) {
+          console.warn(
+            `🛒 WARNING: Missing slots: [${missingSlots.join(", ")}]`,
+          );
+          console.warn(
+            `🛒 WARNING: Expected 6 slots (0-5), but only found ${shopInventory.length}`,
+          );
+        }
+
+        // Log each item for detailed inspection
+        shopInventory.forEach((item, index) => {
+          console.log(
+            `🛒 ITEM ${index}: Slot ${item.slot_index} - ${item.orb_type} (${item.rarity}) - ${item.base_price} cheddah`,
+          );
+        });
+      } else {
+        console.error(
+          `🛒 ERROR: No shop inventory found for player ${playerAddress}, game ${gameId}, level ${level}`,
+        );
+      }
+
       return shopInventory;
     } catch (error) {
       console.error("Error fetching shop inventory:", error);
