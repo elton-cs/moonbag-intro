@@ -272,7 +272,7 @@ export class MainScreen extends Container {
     // Health label
     this.healthLabel = new Label({
       text: "❤️ 5",
-      style: { fill: 0xff4a6a, fontSize: 12, fontWeight: "bold" },
+      style: { fill: 0xff4a6a, fontSize: 16, fontWeight: "bold" },
     });
     this.healthLabel.anchor.set(0.5);
     this.healthLabel.position.set(
@@ -284,7 +284,7 @@ export class MainScreen extends Container {
     // Cheddah label
     this.cheddahLabel = new Label({
       text: "💰 0",
-      style: { fill: 0x44ff88, fontSize: 12, fontWeight: "bold" },
+      style: { fill: 0x44ff88, fontSize: 16, fontWeight: "bold" },
     });
     this.cheddahLabel.anchor.set(0.5);
     this.cheddahLabel.position.set(
@@ -296,7 +296,7 @@ export class MainScreen extends Container {
     // Points label
     this.pointsLabel = new Label({
       text: "⭐ 0",
-      style: { fill: 0x8a4fff, fontSize: 12, fontWeight: "bold" },
+      style: { fill: 0x8a4fff, fontSize: 16, fontWeight: "bold" },
     });
     this.pointsLabel.anchor.set(0.5);
     this.pointsLabel.position.set(
@@ -307,8 +307,8 @@ export class MainScreen extends Container {
 
     // Base Multiplier label
     this.multiplierLabel = new Label({
-      text: "⚡ 1x",
-      style: { fill: 0xff9933, fontSize: 12, fontWeight: "bold" },
+      text: "⚡ 1.00x",
+      style: { fill: 0xff9933, fontSize: 16, fontWeight: "bold" },
     });
     this.multiplierLabel.anchor.set(0.5);
     this.multiplierLabel.position.set(
@@ -319,8 +319,8 @@ export class MainScreen extends Container {
 
     // Temporary Multiplier label (initially hidden)
     this.tempMultiplierLabel = new Label({
-      text: "🔥 +2x NEXT",
-      style: { fill: 0xff4444, fontSize: 12, fontWeight: "bold" },
+      text: "🔥 +2.00x NEXT",
+      style: { fill: 0xff4444, fontSize: 16, fontWeight: "bold" },
     });
     this.tempMultiplierLabel.anchor.set(0.5);
     this.tempMultiplierLabel.position.set(
@@ -1232,11 +1232,11 @@ export class MainScreen extends Container {
       this.pointsLabel.text = `⭐ ${activeGame.points}`;
 
       // Update multiplier displays
-      this.multiplierLabel.text = `⚡ ${activeGame.multiplier}x`;
+      this.multiplierLabel.text = `⚡ ${(activeGame.multiplier / 100).toFixed(2)}x`;
 
       // Show/hide temporary multiplier based on active state
       if (activeGame.temp_multiplier_active) {
-        this.tempMultiplierLabel.text = `🔥 +${activeGame.temp_multiplier_value}x NEXT`;
+        this.tempMultiplierLabel.text = `🔥 +${(activeGame.temp_multiplier_value / 100).toFixed(2)}x NEXT`;
         this.tempMultiplierLabel.visible = true;
       } else {
         this.tempMultiplierLabel.visible = false;
