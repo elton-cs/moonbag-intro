@@ -1,5 +1,4 @@
 
-use crate::models::OrbType;
 
 #[starknet::interface]
 pub trait IActions<T> {
@@ -8,7 +7,7 @@ pub trait IActions<T> {
     fn advance_to_next_level(ref self: T);
     fn cash_out(ref self: T);
     fn gift_moonrocks(ref self: T);
-    fn purchase_orb(ref self: T, orb_type: OrbType);
+    fn purchase_orb(ref self: T, slot_index: u8);
 }
 
 
@@ -651,6 +650,11 @@ pub mod actions {
 
             // Write updated game state
             world.write_model(@game);
+
+            // Generate shop inventory for the new level if not at max level
+            if next_level < MAX_LEVEL {
+                generate_shop_inventory(ref world, player, game.game_id, next_level);
+            }
         }
 
         fn cash_out(ref self: ContractState) {
@@ -706,7 +710,7 @@ pub mod actions {
             world.write_model(@gift);
         }
 
-        fn purchase_orb(ref self: ContractState, orb_type: OrbType) {
+        fn purchase_orb(ref self: ContractState, slot_index: u8) {
             let mut world = self.world_default();
             let player = get_caller_address();
 
@@ -718,18 +722,16 @@ pub mod actions {
             let mut game: Game = world.read_model((player, active_game.game_id));
             assert(game.game_state == GameState::LevelComplete, 'Level not completed');
 
-            // Find the orb in current shop inventory
-            let mut orb_found = false;
-            let mut slot_index: u8 = 0;
-            while slot_index < SHOP_SLOTS {
-                let shop_slot: ShopInventory = world.read_model((player, game.game_id, game.current_level, slot_index));
-                if shop_slot.orb_type == orb_type {
-                    orb_found = true;
-                    break;
-                }
-                slot_index = slot_index.saturating_add(1);
-            };
-            assert(orb_found, 'Orb not in shop');
+            // Validate slot index is within shop bounds
+            assert(slot_index < SHOP_SLOTS, 'Invalid slot index');
+
+            // Get the shop slot directly by index
+            let shop_slot: ShopInventory = world.read_model((player, game.game_id, game.current_level, slot_index));
+            
+            // Check if slot contains an orb (non-default orb type means slot is occupied)
+            assert(shop_slot.orb_type != OrbType::SingleBomb, 'Shop slot is empty');
+
+            let orb_type = shop_slot.orb_type;
 
             // Get purchase history for price calculation
             let purchase_history: PurchaseHistory = world.read_model((player, game.game_id, orb_type));

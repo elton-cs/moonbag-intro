@@ -102,7 +102,7 @@ export class ShopScreen extends Container {
       shopItems: [],
       purchaseHistory: [],
       playerCheddah: 0,
-      onPurchase: (orbType: string) => this.handlePurchase(orbType),
+      onPurchase: (slotIndex: number) => this.handlePurchase(slotIndex),
     });
     this.mainContainer.addChild(this.shopGrid);
   }
@@ -185,17 +185,17 @@ export class ShopScreen extends Container {
     this.mainContainer.addChild(this.statusLabel);
   }
 
-  private async handlePurchase(orbType: string): Promise<void> {
+  private async handlePurchase(slotIndex: number): Promise<void> {
     if (this.isProcessingPurchase) return;
 
     try {
       this.isProcessingPurchase = true;
       this.showStatus("🔄 Purchasing orb...", "info");
 
-      console.log(`Purchasing orb: ${orbType}`);
+      console.log(`Purchasing orb from slot: ${slotIndex}`);
 
       // Call wallet service to purchase orb
-      await engine().wallet.purchaseOrb(orbType);
+      await engine().wallet.purchaseOrb(slotIndex);
 
       this.showStatus("✅ Orb purchased successfully!", "success");
 

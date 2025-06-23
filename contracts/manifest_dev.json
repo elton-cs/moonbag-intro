@@ -1328,8 +1328,8 @@
   },
   "contracts": [
     {
-      "address": "0x75d7552f40a3a24c2a701e3c03ef52a2bbcc9eceab8bdc5cca5c430bf4ad8ad",
-      "class_hash": "0x774faec127ce9b0a1ce7d772e1e4328ecb9683652512f5de1f6a916c9c2b279",
+      "address": "0x6591277ae01fc65977a8959962de99ba6f79bd0954e87328b5c71634e5d94c2",
+      "class_hash": "0x1494823594a87a6b28a34c12d3e5da88696f2e2f4ff03e8ab5ca6a43b29e62b",
       "abi": [
         {
           "type": "impl",
@@ -1387,84 +1387,6 @@
           "interface_name": "dojo_intro::systems::actions::IActions"
         },
         {
-          "type": "enum",
-          "name": "dojo_intro::models::OrbType",
-          "variants": [
-            {
-              "name": "SingleBomb",
-              "type": "()"
-            },
-            {
-              "name": "DoubleBomb",
-              "type": "()"
-            },
-            {
-              "name": "TripleBomb",
-              "type": "()"
-            },
-            {
-              "name": "FivePoints",
-              "type": "()"
-            },
-            {
-              "name": "DoubleMultiplier",
-              "type": "()"
-            },
-            {
-              "name": "RemainingOrbs",
-              "type": "()"
-            },
-            {
-              "name": "BombCounter",
-              "type": "()"
-            },
-            {
-              "name": "Health",
-              "type": "()"
-            },
-            {
-              "name": "CheddahBomb",
-              "type": "()"
-            },
-            {
-              "name": "SevenPoints",
-              "type": "()"
-            },
-            {
-              "name": "MoonRock",
-              "type": "()"
-            },
-            {
-              "name": "HalfMultiplier",
-              "type": "()"
-            },
-            {
-              "name": "EightPoints",
-              "type": "()"
-            },
-            {
-              "name": "NinePoints",
-              "type": "()"
-            },
-            {
-              "name": "NextPoints2x",
-              "type": "()"
-            },
-            {
-              "name": "Multiplier1_5x",
-              "type": "()"
-            },
-            {
-              "name": "BigHealth",
-              "type": "()"
-            },
-            {
-              "name": "BigMoonRock",
-              "type": "()"
-            }
-          ]
-        },
-        {
           "type": "interface",
           "name": "dojo_intro::systems::actions::IActions",
           "items": [
@@ -1508,8 +1430,8 @@
               "name": "purchase_orb",
               "inputs": [
                 {
-                  "name": "orb_type",
-                  "type": "dojo_intro::models::OrbType"
+                  "name": "slot_index",
+                  "type": "core::integer::u8"
                 }
               ],
               "outputs": [],

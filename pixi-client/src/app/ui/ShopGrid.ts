@@ -11,7 +11,7 @@ export interface ShopGridOptions {
   shopItems: ShopInventoryModel[];
   purchaseHistory: PurchaseHistoryModel[];
   playerCheddah: number;
-  onPurchase?: (orbType: string) => void;
+  onPurchase?: (slotIndex: number) => void;
 }
 
 export class ShopGrid extends Container {
@@ -75,7 +75,7 @@ export class ShopGrid extends Container {
         currentPrice,
         purchaseCount,
         playerCheddah,
-        onPurchase,
+        onPurchase: () => onPurchase(shopItem.slot_index),
       });
 
       this.orbCards.set(shopItem.orb_type, orbCard);

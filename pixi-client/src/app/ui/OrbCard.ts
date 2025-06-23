@@ -10,7 +10,7 @@ export interface OrbCardOptions {
   currentPrice: number;
   purchaseCount: number;
   playerCheddah: number;
-  onPurchase?: (orbType: string) => void;
+  onPurchase?: () => void;
 }
 
 export class OrbCard extends Container {
@@ -158,7 +158,7 @@ export class OrbCard extends Container {
     this.purchaseButton.position.set(10, 135);
     this.purchaseButton.onPress.on(() => {
       if (this.options.onPurchase) {
-        this.options.onPurchase(this.options.shopItem.orb_type);
+        this.options.onPurchase();
       }
     });
     this.addChild(this.purchaseButton);
