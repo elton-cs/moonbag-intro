@@ -60,18 +60,6 @@ pub mod actions {
         }
     }
 
-    fn get_cheddah_reward(level: u8) -> u32 {
-        match level.saturating_sub(1) {
-            0 => 10,  // Level 1
-            1 => 15,  // Level 2
-            2 => 20,  // Level 3
-            3 => 25,  // Level 4
-            4 => 30,  // Level 5
-            5 => 40,  // Level 6
-            6 => 50,  // Level 7
-            _ => 0,
-        }
-    }
 
     // Pseudo-random function for orb selection
     fn get_pseudo_random(player: starknet::ContractAddress, game_id: u32, max_value: u32) -> u32 {
@@ -425,8 +413,8 @@ pub mod actions {
                 } else {
                     // Level completed - await player choice
                     game.game_state = GameState::LevelComplete;
-                    // Award Cheddah for level completion
-                    game.cheddah = game.cheddah.saturating_add(get_cheddah_reward(game.current_level));
+                    // Award Cheddah equal to points earned
+                    game.cheddah = game.cheddah.saturating_add(game.points);
                 }
             } else if game.orb_bag_size == 0 {
                 // Loss condition: bag empty before milestone reached
@@ -471,6 +459,7 @@ pub mod actions {
             // Advance to next level
             game.current_level = next_level;
             game.game_state = GameState::Active;
+            game.points = INIT_POINTS; // Reset points to 0 for new level
             game.multiplier = INIT_MULTIPLIER; // Reset multiplier between levels
             game.orbs_drawn_count = 0; // Clear drawn orbs count for new level
             game.bombs_drawn_count = 0; // Clear bombs drawn count for new level
