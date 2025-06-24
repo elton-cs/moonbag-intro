@@ -12,12 +12,12 @@ import { getMainDefinition } from "@apollo/client/utilities";
 
 // Create HTTP link to Torii GraphQL endpoint
 const httpLink = createHttpLink({
-  uri: "http://localhost:8080/graphql",
+  uri: "https://api.cartridge.gg/x/moonbagvibes/torii/graphql",
 });
 
 // Create WebSocket link for subscriptions
 const wsClient = createClient({
-  url: "ws://localhost:8080/graphql",
+  url: "wss://api.cartridge.gg/x/moonbagvibes/torii/graphql",
   connectionParams: () => ({
     // Add any connection parameters if needed
   }),

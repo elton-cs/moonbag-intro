@@ -4,7 +4,7 @@
  */
 
 // Import manifest - path relative to pixi-client directory
-import manifest from "../../../contracts/manifest_dev.json";
+import manifest from "../../../contracts/manifest_slot.json";
 
 const actionsContract = manifest.contracts.find(
   (contract: { tag: string; address: string }) => contract.tag === "di-actions",
@@ -13,9 +13,11 @@ const VRF_PROVIDER_ADDRESS =
   "0x15f542e25a4ce31481f986888c179b6e57412be340b8095f72f75a328fbb27b";
 
 export const controllerOptions = {
-  chains: [{ rpcUrl: "http://localhost:5050" }],
+  chains: [{ rpcUrl: "https://api.cartridge.gg/x/moonbagvibes/katana" }],
   // "KATANA"
-  defaultChainId: "0x4b4154414e41",
+  // defaultChainId: "0x4b4154414e41",
+  // "WP_MOONBAGVIBES"
+  defaultChainId: "0x57505f4d4f4f4e4241475649424553",
   policies: {
     contracts: {
       [actionsContract!.address]: {

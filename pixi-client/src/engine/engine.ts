@@ -67,8 +67,8 @@ export class CreationEngine extends Application {
     await Assets.loadBundle("preload");
 
     // List all existing bundles names
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allBundles =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (manifest as any).bundles?.map((item: any) => item.name) || [];
     // Start up background loading of all bundles
     Assets.backgroundLoadBundle(allBundles);
