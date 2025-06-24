@@ -54,14 +54,16 @@ export class HomeScreen extends Container {
     // Connect wallet button
     this.connectButton = new CustomButton({
       text: "Connect Wallet",
-      width: 300,
-      height: 80,
-      backgroundColor: 0x2a2a3a,
-      borderColor: 0x8a4fff,
-      textColor: 0xffffff,
+      width: 220,
+      height: 60,
+      backgroundColor: 0x1a1a2e,
+      borderColor: 0x00ff88,
+      textColor: 0x00ff88,
       fontSize: 18,
+      borderRadius: 4,
+      borderWidth: 3,
     });
-    this.connectButton.pivot.set(150, 40);
+    this.connectButton.pivot.set(110, 30);
     this.connectButton.onPress.on(() => this.handleConnectWallet());
     this.addChild(this.connectButton);
 
@@ -122,10 +124,8 @@ export class HomeScreen extends Container {
     if (this.backgroundImage) {
       this.backgroundImage.position.set(centerX, centerY);
 
-      // Scale to cover the screen while maintaining aspect ratio
-      const scaleX = width / this.backgroundImage.texture.width;
-      const scaleY = height / this.backgroundImage.texture.height;
-      const scale = Math.max(scaleX, scaleY);
+      // Scale to fit height while maintaining aspect ratio
+      const scale = height / this.backgroundImage.texture.height;
       this.backgroundImage.scale.set(scale);
     }
 
