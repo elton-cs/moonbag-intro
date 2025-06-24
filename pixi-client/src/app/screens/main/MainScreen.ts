@@ -133,14 +133,13 @@ export class MainScreen extends Container {
     this.background.fill(0x0a0a1a); // Deep space color
     this.addChild(this.background);
 
-    // Try to load background image if available
+    // Load star background image
     try {
-      // This will work if you place background.png in raw-assets/preload/
-      this.backgroundImage = Sprite.from("preload/background.png");
+      this.backgroundImage = Sprite.from("preload/starbg.jpg");
       this.backgroundImage.anchor.set(0.5);
       this.addChild(this.backgroundImage);
     } catch {
-      console.log("Background image not found, using solid color background");
+      console.log("Star background image not found, using solid color background");
     }
 
     // Create flash overlay for damage/healing effects
