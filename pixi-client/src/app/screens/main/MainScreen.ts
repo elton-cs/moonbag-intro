@@ -8,6 +8,7 @@ import { CustomButton } from "../../ui/CustomButton";
 import { Label } from "../../ui/Label";
 import { OrbsDrawnList } from "../../ui/OrbsDrawnList";
 import { EventLogList } from "../../ui/EventLogList";
+import { MilestoneProgress } from "../../ui/MilestoneProgress";
 import { ShopScreen } from "../ShopScreen";
 import type { ShopScreenData } from "../ShopScreen";
 import type { WalletConnectionState } from "../../../wallet";
@@ -40,6 +41,11 @@ export class MainScreen extends Container {
       HEIGHT: 180, // Large central display for current orb
       BORDER_RADIUS: 8,
     },
+    MILESTONE_PROGRESS: {
+      WIDTH: 500,
+      HEIGHT: 60, // New row for milestone progress
+      BORDER_RADIUS: 8,
+    },
     DRAWN_ORBS_ROW: {
       WIDTH: 500,
       HEIGHT: 160, // New row for drawn orbs list
@@ -68,6 +74,7 @@ export class MainScreen extends Container {
   private moonRocksRow!: Container;
   private resourceBar!: Container;
   private centralOrbDisplay!: Container;
+  private milestoneProgressRow!: Container;
   private drawnOrbsRow!: Container;
   private eventLogRow!: Container;
   private controlPanel!: Container;
@@ -91,6 +98,7 @@ export class MainScreen extends Container {
   private currentOrbEmoji!: Label;
   private orbsDrawnList!: OrbsDrawnList;
   private eventLogList!: EventLogList;
+  private milestoneProgress!: MilestoneProgress;
 
   // Settings UI (inline)
   private settingsContainer!: Container;
@@ -161,6 +169,7 @@ export class MainScreen extends Container {
     this.moonRocksRow = new Container();
     this.resourceBar = new Container();
     this.centralOrbDisplay = new Container();
+    this.milestoneProgressRow = new Container();
     this.drawnOrbsRow = new Container();
     this.eventLogRow = new Container();
     this.controlPanel = new Container();
@@ -170,6 +179,7 @@ export class MainScreen extends Container {
     this.mainContainer.addChild(this.moonRocksRow);
     this.mainContainer.addChild(this.resourceBar);
     this.mainContainer.addChild(this.centralOrbDisplay);
+    this.mainContainer.addChild(this.milestoneProgressRow);
     this.mainContainer.addChild(this.drawnOrbsRow);
     this.mainContainer.addChild(this.eventLogRow);
     this.mainContainer.addChild(this.controlPanel);
@@ -185,6 +195,7 @@ export class MainScreen extends Container {
     this.createMoonRocksRow();
     this.createResourceBar();
     this.createCentralOrbDisplay();
+    this.createMilestoneProgressRow();
     this.createDrawnOrbsRow();
     this.createEventLogRow();
     this.createControlPanel();
@@ -422,6 +433,19 @@ export class MainScreen extends Container {
     this.drawnOrbsRow.addChild(this.orbsDrawnList);
   }
 
+  private createMilestoneProgressRow(): void {
+    const layout = MainScreen.LAYOUT;
+
+    // Create milestone progress component
+    this.milestoneProgress = new MilestoneProgress({
+      width: layout.MILESTONE_PROGRESS.WIDTH,
+      height: layout.MILESTONE_PROGRESS.HEIGHT,
+      currentPoints: 0,
+      currentLevel: 1,
+    });
+    this.milestoneProgressRow.addChild(this.milestoneProgress);
+  }
+
   private createEventLogRow(): void {
     const layout = MainScreen.LAYOUT;
 
@@ -639,6 +663,8 @@ export class MainScreen extends Container {
       layout.PANEL_SPACING +
       layout.CENTRAL_ORB_DISPLAY.HEIGHT +
       layout.PANEL_SPACING +
+      layout.MILESTONE_PROGRESS.HEIGHT +
+      layout.PANEL_SPACING +
       layout.DRAWN_ORBS_ROW.HEIGHT +
       layout.PANEL_SPACING +
       layout.EVENT_LOG_ROW.HEIGHT +
@@ -673,6 +699,11 @@ export class MainScreen extends Container {
     this.centralOrbDisplay.y = currentY;
     currentY += layout.CENTRAL_ORB_DISPLAY.HEIGHT + layout.PANEL_SPACING;
 
+    // Milestone progress row
+    this.milestoneProgressRow.x = -layout.MILESTONE_PROGRESS.WIDTH / 2;
+    this.milestoneProgressRow.y = currentY;
+    currentY += layout.MILESTONE_PROGRESS.HEIGHT + layout.PANEL_SPACING;
+
     // Drawn orbs row
     this.drawnOrbsRow.x = -layout.DRAWN_ORBS_ROW.WIDTH / 2;
     this.drawnOrbsRow.y = currentY;
@@ -702,6 +733,7 @@ export class MainScreen extends Container {
       this.moonRocksRow,
       this.resourceBar,
       this.centralOrbDisplay,
+      this.milestoneProgressRow,
       this.drawnOrbsRow,
       this.eventLogRow,
       this.controlPanel,
@@ -1245,6 +1277,12 @@ export class MainScreen extends Container {
       // Update level display
       this.levelLabel.text = `Level ${activeGame.current_level}`;
 
+      // Update milestone progress
+      this.milestoneProgress.updateProgress(
+        activeGame.points,
+        activeGame.current_level,
+      );
+
       // Track game state changes
       if (
         activeGame.game_state !== this.lastGameState &&
@@ -1290,6 +1328,7 @@ export class MainScreen extends Container {
       this.tempMultiplierLabel.visible = false;
       this.levelLabel.text = "No Game";
       this.moonRocksDisplayLabel.text = "🌙 --";
+      this.milestoneProgress.updateProgress(0, 1); // Reset to default
       this.resetCentralOrbDisplay();
       this.updateControlsForGameState("", false);
     }
