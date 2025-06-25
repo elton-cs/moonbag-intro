@@ -12,8 +12,8 @@ export interface MilestoneProgressOptions {
 
 /** Milestone progress display component showing current level and points progress */
 export class MilestoneProgress extends Container {
-  private readonly width: number;
-  private readonly height: number;
+  private readonly componentWidth: number;
+  private readonly componentHeight: number;
   private background!: Graphics;
   private progressBar!: Graphics;
   private progressFill!: Graphics;
@@ -39,8 +39,8 @@ export class MilestoneProgress extends Container {
   constructor(options: MilestoneProgressOptions = {}) {
     super();
 
-    this.width = options.width || 500;
-    this.height = options.height || 60;
+    this.componentWidth = options.width || 500;
+    this.componentHeight = options.height || 60;
     this.currentPoints = options.currentPoints || 0;
     this.currentLevel = options.currentLevel || 1;
     this.targetPoints =
@@ -56,7 +56,13 @@ export class MilestoneProgress extends Container {
 
   private createBackground(): void {
     this.background = new Graphics();
-    this.background.roundRect(0, 0, this.width, this.height, 8);
+    this.background.roundRect(
+      0,
+      0,
+      this.componentWidth,
+      this.componentHeight,
+      8,
+    );
     this.background.fill(0x1a1a2a);
     this.background.stroke({ color: 0x8a4fff, width: 2 });
     this.addChild(this.background);
@@ -65,15 +71,15 @@ export class MilestoneProgress extends Container {
   private createProgressBar(): void {
     // Progress bar background
     this.progressBar = new Graphics();
-    this.progressBar.roundRect(0, 0, this.width - 20, 16, 8);
+    this.progressBar.roundRect(0, 0, this.componentWidth - 20, 16, 8);
     this.progressBar.fill(0x2a2a3a);
     this.progressBar.stroke({ color: 0x4a4a5a, width: 1 });
-    this.progressBar.position.set(10, this.height - 26);
+    this.progressBar.position.set(10, this.componentHeight - 26);
     this.addChild(this.progressBar);
 
     // Progress bar fill
     this.progressFill = new Graphics();
-    this.progressFill.position.set(10, this.height - 26);
+    this.progressFill.position.set(10, this.componentHeight - 26);
     this.addChild(this.progressFill);
   }
 
@@ -102,7 +108,7 @@ export class MilestoneProgress extends Container {
       },
     });
     this.pointsLabel.anchor.set(1, 0);
-    this.pointsLabel.position.set(this.width - 10, 8);
+    this.pointsLabel.position.set(this.componentWidth - 10, 8);
     this.addChild(this.pointsLabel);
 
     // Progress percentage label (center of progress bar)
@@ -116,7 +122,10 @@ export class MilestoneProgress extends Container {
       },
     });
     this.progressLabel.anchor.set(0.5);
-    this.progressLabel.position.set(this.width / 2, this.height - 18);
+    this.progressLabel.position.set(
+      this.componentWidth / 2,
+      this.componentHeight - 18,
+    );
     this.addChild(this.progressLabel);
   }
 
@@ -149,8 +158,11 @@ export class MilestoneProgress extends Container {
     }
   }
 
-  private updateProgressBar(progressPercent: number, animate: boolean): void {
-    const maxWidth = this.width - 20;
+  private updateProgressBar(
+    progressPercent: number,
+    animateProgress: boolean,
+  ): void {
+    const maxWidth = this.componentWidth - 20;
     const fillWidth = (progressPercent / 100) * maxWidth;
 
     // Determine progress bar color based on completion
@@ -169,7 +181,7 @@ export class MilestoneProgress extends Container {
     }
 
     // Animate progress bar if requested
-    if (animate) {
+    if (animateProgress) {
       // Start from current width and animate to new width
       const currentWidth = this.progressFill.width;
       this.progressFill.scale.x = currentWidth / fillWidth || 0;
