@@ -76,7 +76,9 @@ export class ShopScreen extends Container {
       this.backgroundImage.anchor.set(0.5);
       this.addChild(this.backgroundImage);
     } catch {
-      console.log("Star background image not found, using solid color background");
+      console.log(
+        "Star background image not found, using solid color background",
+      );
     }
   }
 

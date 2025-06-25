@@ -139,7 +139,9 @@ export class MainScreen extends Container {
       this.backgroundImage.anchor.set(0.5);
       this.addChild(this.backgroundImage);
     } catch {
-      console.log("Star background image not found, using solid color background");
+      console.log(
+        "Star background image not found, using solid color background",
+      );
     }
 
     // Create flash overlay for damage/healing effects
@@ -497,7 +499,6 @@ export class MainScreen extends Container {
     });
     this.pullOrbButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.pullOrbButton.onPress.on(() => this.handlePullOrb());
-    this.pullOrbButton.visible = false; // Initially hidden
     this.controlPanel.addChild(this.pullOrbButton);
 
     currentX += buttonWidth + spacing;
@@ -514,7 +515,6 @@ export class MainScreen extends Container {
     });
     this.advanceLevelButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.advanceLevelButton.onPress.on(() => this.handleAdvanceLevel());
-    this.advanceLevelButton.visible = false; // Initially hidden
     this.controlPanel.addChild(this.advanceLevelButton);
 
     currentX += buttonWidth + spacing;
@@ -531,7 +531,6 @@ export class MainScreen extends Container {
     });
     this.cashOutButton.position.set(currentX, buttonY - buttonHeight / 2);
     this.cashOutButton.onPress.on(() => this.handleCashOut());
-    this.cashOutButton.visible = false; // Initially hidden
     this.controlPanel.addChild(this.cashOutButton);
 
     currentX += buttonWidth + spacing;
@@ -1502,54 +1501,47 @@ export class MainScreen extends Container {
     gameState: string,
     hasActiveGame: boolean,
   ): void {
-    // Hide all game action buttons initially
-    this.pullOrbButton.visible = false;
-    this.advanceLevelButton.visible = false;
-    this.cashOutButton.visible = false;
+    // Disable all game action buttons initially
+    this.pullOrbButton.enabled = false;
+    this.advanceLevelButton.enabled = false;
+    this.cashOutButton.enabled = false;
 
     if (!hasActiveGame) {
-      // No active game - show start button only
+      // No active game - enable start button only
       this.startGameButton.enabled = true;
       this.startGameButton.text = "🎮 START";
-      this.startGameButton.visible = true;
       return;
     }
 
+    // Disable start button when game is active
+    this.startGameButton.enabled = false;
+
     switch (gameState) {
       case "Active":
-        // Game is active - show pull orb and cash out buttons, hide start
-        this.startGameButton.visible = false;
-        this.pullOrbButton.visible = true;
+        // Game is active - enable pull orb and cash out buttons
         this.pullOrbButton.enabled = true;
-        this.cashOutButton.visible = true;
         this.cashOutButton.enabled = true;
         this.cashOutButton.text = "💰 CASH OUT";
         break;
 
       case "LevelComplete":
-        // Level completed - show advance and quit options
-        this.startGameButton.visible = false;
-        this.advanceLevelButton.visible = true;
+        // Level completed - enable advance and quit options
         this.advanceLevelButton.enabled = true;
-        this.cashOutButton.visible = true;
         this.cashOutButton.enabled = true;
         break;
 
       case "GameWon":
       case "GameLost":
-        // Game over - show quit option only
-        this.startGameButton.visible = false;
-        this.cashOutButton.visible = true;
+        // Game over - enable quit option only
         this.cashOutButton.enabled = true;
         this.cashOutButton.text =
           gameState === "GameWon" ? "🏆 CLAIM VICTORY" : "💀 END GAME";
         break;
 
       default:
-        // Fallback - show start button
+        // Fallback - enable start button
         this.startGameButton.enabled = true;
         this.startGameButton.text = "🎮 START";
-        this.startGameButton.visible = true;
         break;
     }
   }
